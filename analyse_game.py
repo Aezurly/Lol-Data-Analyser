@@ -35,7 +35,7 @@ if __name__ == "__main__":
         visualizer = GameVisualizer(game.get_all_participants(), game)
 
         # Permettre à l'utilisateur de choisir quel graphique afficher
-        while True:
+        def display_menu():
             print("\nChoisissez un graphique à afficher :")
             print("1. Dégâts totaux infligés par joueur")
             print("2. KDA par joueur")
@@ -44,24 +44,32 @@ if __name__ == "__main__":
             print("5. Comparer les positions")
             print("6. Quitter")
 
+        def handle_position_comparison():
+            existing_positions = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+            print("Choisis la position à comparer (TOP, JUNGLE, MIDDLE, BOTTOM, UTILITY) ou ALL:")
+            position = input("Entrez la position : ").upper()
+            if position == "ALL":
+                for pos in existing_positions:
+                    visualizer.plot_position_comparison_spider_chart(pos)
+            elif position in existing_positions:
+                visualizer.plot_position_comparison_spider_chart(position)
+            else:
+                print("Position invalide. Veuillez réessayer.")
+
+        command_map = {
+            "1": visualizer.plot_total_damage,
+            "2": visualizer.plot_kda,
+            "3": visualizer.plot_damage_per_gold,
+            "4": visualizer.plot_vision_scores,
+            "5": handle_position_comparison,
+            "6": lambda: (print("Clôture du programme."), exit())
+        }
+
+        while True:
+            display_menu()
             choix = input("Entrez le numéro de votre choix : ")
-
-            command_map = {
-                "1": visualizer.plot_total_damage,
-                "2": visualizer.plot_kda,
-                "3": visualizer.plot_damage_per_gold,
-                "4": visualizer.plot_vision_scores,
-                "5": lambda: (
-                    print("Choisis la position à comparer (TOP, JUNGLE, MIDDLE, BOTTOM, UTILITY):"),
-                    (position := input("Entrez la position : ").upper()),
-                    visualizer.plot_position_comparison_spider_chart(position)
-                    if position in ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
-                    else print("Position invalide. Veuillez réessayer.")
-                ),
-                "6": lambda: print("Clôture du programme.") or exit()
-            }
-
-            if choix in command_map:
-                command_map[choix]()
+            action = command_map.get(choix)
+            if action:
+                action()
             else:
                 print("Choix invalide. Veuillez réessayer.")

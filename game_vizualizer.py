@@ -123,7 +123,7 @@ class GameVisualizer:
             player.get_kda(),
             player.get_total_damage() / minutes,
             player.get_vision_score() / minutes,
-            player.get_damage_per_gold() / minutes,
+            player.get_damage_per_gold(),
             player.get_kill_participation(self.game.get_team_kills(player.get_team())),
             player.get_level(),
             player.get_cs() / minutes,
