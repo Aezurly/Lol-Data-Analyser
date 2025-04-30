@@ -31,17 +31,15 @@ if __name__ == "__main__":
         print(f"Équipe Blue : {game.get_team_damage('100')}")
         print(f"Équipe Red : {game.get_team_damage('200')}")
 
-        # Créer une instance de GameVisualizer
         visualizer = GameVisualizer(game.get_all_participants(), game)
 
-        # Permettre à l'utilisateur de choisir quel graphique afficher
         def display_menu():
             print("\nChoisissez un graphique à afficher :")
             print("1. Dégâts totaux infligés par joueur")
             print("2. KDA par joueur")
             print("3. DMG/Gold")
             print("4. Score de vision par joueur")
-            print("5. Comparer les positions")
+            print("5. Radar chart de comparaison des positions")
             print("6. Quitter")
 
         def handle_position_comparison():

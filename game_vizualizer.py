@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 
 
 class GameVisualizer:
-    """Classe pour générer des graphiques à partir des données de jeu."""
+    """Class to generate game data visualizations."""
     def __init__(self, participants: List[ParticipantData], game: GameData):
         self.participants = participants
         self.game = game
 
     def _plot_bar_chart(self, x_labels, y_values, title, xlabel, ylabel, color='skyblue'):
-        """Méthode utilitaire pour afficher un graphique en barres."""
+        """Utility to display a bar chart."""
         plt.figure(figsize=(10, 6))
         plt.bar(x_labels, y_values, color=color)
         plt.title(title)
@@ -22,7 +22,7 @@ class GameVisualizer:
         plt.show()
 
     def _plot_grouped_bar_chart(self, x_labels, groups, group_labels, title, xlabel, ylabel):
-        """Méthode utilitaire pour afficher un graphique en barres groupées."""
+        """Utility to display a grouped bar chart."""
         x = range(len(x_labels))
         plt.figure(figsize=(10, 6))
         width = 0.25
@@ -37,7 +37,7 @@ class GameVisualizer:
         plt.show()
 
     def plot_total_damage(self):
-        """Affiche un graphique des dégâts totaux infligés par joueur et leur champion."""
+        """Plot total damage by player and champion."""
         names_and_champions = [f"{p.get_name()} ({p.get_champion()})" for p in self.participants]
         damages = [p.get_total_damage() for p in self.participants]
         self._plot_bar_chart(
@@ -49,7 +49,7 @@ class GameVisualizer:
         )
 
     def plot_kda(self):
-        """Affiche un graphique des KDA (Kills, Deaths, Assists) par joueur."""
+        """Plot KDA (Kills, Deaths, Assists) for each player."""
         names = self._get_participant_names()
         kills = [p.get_kills() for p in self.participants]
         deaths = [p.get_deaths() for p in self.participants]
@@ -68,7 +68,7 @@ class GameVisualizer:
         )
 
     def plot_damage_per_gold(self):
-        """Affiche un graphique des dégâts par or dépensé par joueur."""
+        """Plot damage per gold spent by player."""
         names = self._get_participant_names()
         damage_per_gold = [p.get_damage_per_gold() for p in self.participants]
         self._plot_bar_chart(
@@ -81,7 +81,7 @@ class GameVisualizer:
         )
 
     def plot_vision_scores(self):
-        """Affiche un graphique des scores de vision par joueur."""
+        """Plot vision scores for each player."""
         names = self._get_participant_names()
         vision_scores = [p.get_vision_score() for p in self.participants]
         self._plot_bar_chart(
@@ -94,7 +94,7 @@ class GameVisualizer:
         )
 
     def plot_team_damage_distribution(self):
-        """Affiche un graphique en camembert de la répartition des dégâts par équipe."""
+        """Plot team damage distribution as a pie chart."""
         team_100_damage = self.game.get_team_damage('100')
         team_200_damage = self.game.get_team_damage('200')
         plt.figure(figsize=(8, 6))
@@ -108,13 +108,11 @@ class GameVisualizer:
         plt.show()
         
     def plot_position_comparison_spider_chart(self, position: str):
-        """Affiche un graphique radar pour comparer les deux joueurs d'une position donnée."""
-        # Filtrer les participants par position
+        """Plot radar chart comparing two players in a position."""
         position_players = [p for p in self.participants if p.get_position() == position]
         if len(position_players) != 2:
-            raise ValueError(f"Expected exactly 2 players for position {position}, but found {len(position_players)}.")
+            raise ValueError(f"Expected 2 players for position {position}, found {len(position_players)}.")
 
-        # Récupérer les statistiques à comparer
         stats_labels = ['KDA', 'DPM', 'VS/m', 'DMG/Gold', 'KP', 'Level', 'CS/m']
         minutes = self.game.get_game_duration() / 60
         print(f"Game duration: {minutes:.2f} minutes")
@@ -132,7 +130,6 @@ class GameVisualizer:
         stats_player_1 = extract_stats(position_players[0])
         stats_player_2 = extract_stats(position_players[1])
 
-        # Normaliser les statistiques pour une comparaison équitable
         max_values = [max(s1, s2) for s1, s2 in zip(stats_player_1, stats_player_2)]
         normalized_player_1 = [s / m if m > 0 else 0 for s, m in zip(stats_player_1, max_values)]
         normalized_player_2 = [s / m if m > 0 else 0 for s, m in zip(stats_player_2, max_values)]
@@ -140,12 +137,10 @@ class GameVisualizer:
         angles = [n / float(len(stats_labels)) * 2 * 3.14159 for n in range(len(stats_labels))]
         angles.append(angles[0])
 
-        # Ajouter le premier point à la fin pour fermer le graphique
         normalized_player_1.append(normalized_player_1[0])
         normalized_player_2.append(normalized_player_2[0])
         stats_labels.append(stats_labels[0])
 
-        # Créer le graphique radar
         plt.figure(figsize=(8, 8))
         ax = plt.subplot(111, polar=True)
         ax.plot(angles, normalized_player_1, label=f"{position_players[0].get_name()} ({position_players[0].get_champion()})", color='blue')
@@ -153,14 +148,12 @@ class GameVisualizer:
         ax.plot(angles, normalized_player_2, label=f"{position_players[1].get_name()} ({position_players[1].get_champion()})", color='red')
         ax.fill(angles, normalized_player_2, color='red', alpha=0.25)
 
-        # Ajouter les valeurs des statistiques sur le graphique
-        for i, angle in enumerate(angles[:-1]):  # Exclure le dernier angle (répétition du premier)
+        for i, angle in enumerate(angles[:-1]):
             ax.text(angle, normalized_player_1[i] - 0.1, f"{stats_player_1[i]:.1f}", color='darkblue', ha='center', va='center', fontsize=8)
             ax.text(angle, normalized_player_2[i] - 0.1, f"{stats_player_2[i]:.1f}", color='darkred', ha='center', va='center', fontsize=8)
 
-        # Configurer les étiquettes et le titre
         ax.set_yticks([])
-        ax.set_xticks(angles)  # Ajouter un angle supplémentaire pour correspondre aux étiquettes
+        ax.set_xticks(angles)
         ax.set_xticklabels(stats_labels)
         plt.title(f"Comparison for Position: {position}")
         plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
@@ -168,5 +161,5 @@ class GameVisualizer:
         plt.show()
         
     def _get_participant_names(self) -> List[str]:
-        """Récupère les noms des participants."""
+        """Get participant names."""
         return [f"{p.get_name()} ({p.get_champion()})" for p in self.participants]
