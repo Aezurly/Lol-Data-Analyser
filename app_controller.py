@@ -4,6 +4,7 @@ from utils import setup_console
 from game_display import GameDisplay
 from menu_handler import MenuHandler, MultiGameMenuHandler
 from multi_game_analyzer import MultiGameAnalyzer
+from team_menu_handler import TeamMenuHandler
 from rich.prompt import Prompt
 from rich.panel import Panel
 
@@ -12,6 +13,7 @@ class AppController:
     
     def __init__(self):
         self.console = setup_console()
+        
     
     def display_main_menu(self):
         """Display the main application menu"""
@@ -19,7 +21,8 @@ class AppController:
             "[bold cyan]Game Analysis Tool[/bold cyan]\n\n"
             "[1] Analyze single game\n"
             "[2] Analyze multiple games\n"
-            "[3] Exit",
+            "[3] Team analysis (Marmotte Flip vs opponents)\n"
+            "[4] Exit",
             title="[bold]Main Menu[/bold]",
             border_style="cyan"
         )
@@ -56,6 +59,11 @@ class AppController:
         multi_game_menu = MultiGameMenuHandler(self.console, analyzer)
         multi_game_menu.run_menu_loop()
     
+    def analyze_team_performance(self):
+        """Handle team analysis for Marmotte Flip vs opponents"""
+        team_menu = TeamMenuHandler(self.console)
+        team_menu.run_menu_loop()
+        
     def exit_application(self):
         """Handle application exit"""
         self.console.print("[bold green]Goodbye![/bold green]")
@@ -66,7 +74,8 @@ class AppController:
         return {
             "1": self.analyze_single_game,
             "2": self.analyze_multiple_games,
-            "3": self.exit_application
+            "3": self.analyze_team_performance,
+            "4": self.exit_application
         }
     
     def get_user_choice(self):

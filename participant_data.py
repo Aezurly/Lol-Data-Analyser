@@ -57,7 +57,7 @@ class ParticipantData:
 
     def get_healing_on_teammates(self) -> int:
         """Returns healing done on teammates."""
-        return int(self.data.get("TOTAL_HEAL_ON_TEAMMATES", 0))
+        return int(self.data.get("TOTAL_HEALING_ON_TEAMMATES", 0))
     
     def get_gold_spent(self) -> int:
         """Returns total gold spent."""
