@@ -11,7 +11,7 @@ class PositionComparison:
         self.team_analyzer = team_analyzer
         self.console = console
     
-    def compare_player_to_opponents(self, player_name: str, position: str) -> Dict:
+    def compare_player_to_opponents(self, player_name: str, position: str) -> Optional[Dict]:
         """Compare a specific player to opponents in the same position"""
         player_stats = self.team_analyzer.get_player_average_stats(player_name, position)
         opponents_stats = self.team_analyzer.get_opponents_average_stats(position)
@@ -41,25 +41,30 @@ class PositionComparison:
         
         return comparison
     
-    def display_player_comparison(self, player_name: str, position: str):
-        """Display the comparison of a player with opponents"""
-        comparison = self.compare_player_to_opponents(player_name, position)
-        
-        if not comparison:
-            self.console.print(f"[red]No data available for {player_name} in position {position}[/red]")
-            return
-          # Title
-        self.console.print(f"\n[bold cyan]Comparison: {fix_encoding(player_name)} ({position}) vs Opponents[/bold cyan]")
-        
-        # Comparison table
+    def _create_comparison_table(self, player_name: str, position: str) -> Table:
+        """Create the comparison table with columns"""
         table = Table(title=f"{fix_encoding(player_name)} vs Average of {position} opponents", show_header=True, header_style="bold magenta")
         table.add_column("Statistic", style="cyan", width=20)
         table.add_column(f"{fix_encoding(player_name)}", style="green", width=15)
         table.add_column("Opponents", style="red", width=15)
         table.add_column("Difference", style="yellow", width=15)
         table.add_column("% Diff", style="magenta", width=10)
-        
-        # Main statistics to display
+        return table
+    
+    def _format_stat_values(self, stat_key: str, player_val: float, opponent_val: float, abs_diff: float) -> tuple:
+        """Format statistical values for display"""
+        if stat_key in ['damage', 'cs_per_minute']:
+            player_str = f"{player_val:.0f}"
+            opponent_str = f"{opponent_val:.0f}"
+            diff_str = f"{abs_diff:+.0f}"
+        else:
+            player_str = f"{player_val:.2f}"
+            opponent_str = f"{opponent_val:.2f}"
+            diff_str = f"{abs_diff:+.2f}"
+        return player_str, opponent_str, diff_str
+    
+    def _populate_table_with_stats(self, table: Table, comparison: Dict):
+        """Populate the table with statistical data"""
         main_stats = [
             ('damage', 'Damage'),
             ('kda', 'KDA'),
@@ -69,31 +74,32 @@ class PositionComparison:
         ]
         
         for stat_key, stat_display in main_stats:
-            if stat_key in comparison['player_stats']:
+            if stat_key in comparison['player_stats'] and stat_key in comparison['differences']:
                 player_val = comparison['player_stats'][stat_key]
                 opponent_val = comparison['opponents_stats'][stat_key]
+                diff_data = comparison['differences'][stat_key]
                 
-                if stat_key in comparison['differences']:
-                    diff_data = comparison['differences'][stat_key]
-                    abs_diff = diff_data['absolute_diff']
-                    pct_diff = diff_data['percentage_diff']
-                    is_better = diff_data['is_better']
-                    
-                    # Value formatting
-                    if stat_key in ['damage', 'cs_per_minute']:
-                        player_str = f"{player_val:.0f}"
-                        opponent_str = f"{opponent_val:.0f}"
-                        diff_str = f"{abs_diff:+.0f}"
-                    else:
-                        player_str = f"{player_val:.2f}"
-                        opponent_str = f"{opponent_val:.2f}"
-                        diff_str = f"{abs_diff:+.2f}"
-                    
-                    # Color according to performance
-                    pct_color = "green" if is_better else "red"
-                    pct_str = f"[{pct_color}]{pct_diff:+.1f}%[/{pct_color}]"
-                    
-                    table.add_row(stat_display, player_str, opponent_str, diff_str, pct_str)
+                player_str, opponent_str, diff_str = self._format_stat_values(
+                    stat_key, player_val, opponent_val, diff_data['absolute_diff']
+                )
+                
+                pct_color = "green" if diff_data['is_better'] else "red"
+                pct_str = f"[{pct_color}]{diff_data['percentage_diff']:+.1f}%[/{pct_color}]"
+                
+                table.add_row(stat_display, player_str, opponent_str, diff_str, pct_str)
+
+    def display_player_comparison(self, player_name: str, position: str):
+        """Display the comparison of a player with opponents"""
+        comparison = self.compare_player_to_opponents(player_name, position)
+        
+        if not comparison:
+            self.console.print(f"[red]No data available for {player_name} in position {position}[/red]")
+            return
+            
+        self.console.print(f"\n[bold cyan]Comparison: {fix_encoding(player_name)} ({position}) vs Opponents[/bold cyan]")
+        
+        table = self._create_comparison_table(player_name, position)
+        self._populate_table_with_stats(table, comparison)
         self.console.print(table)
         
         # Additional information

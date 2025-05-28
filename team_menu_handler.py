@@ -6,7 +6,11 @@ from team_visualizer import TeamVisualizer
 from utils import fix_encoding
 
 class TeamMenuHandler:
-    """Gestionnaire de menu pour l'analyse d'équipe d'Aezurly"""
+    """Menu handler for Aezurly's team analysis"""
+    
+    # Constants
+    PROMPT_PLAYER_NAME = "Enter player name"
+    PROMPT_POSITION = "Enter position (TOP (1), JUNGLE (2), MIDDLE (3), BOTTOM (4), UTILITY (5))"
     
     def __init__(self, console):
         self.console = console
@@ -16,180 +20,174 @@ class TeamMenuHandler:
         self.setup_command_map()
     
     def initialize_analyzers(self):
-        """Initialise les analyseurs d'équipe"""
+        """Initialize team analyzers"""
         if not self.team_analyzer:
-            self.console.print("[yellow]Chargement et analyse des données d'équipe...[/yellow]")
+            self.console.print("[yellow]Loading and analyzing team data...[/yellow]")
             self.team_analyzer = TeamAnalyzer("data")
             self.team_analyzer.load_and_analyze_all_games()
             self.position_comparison = PositionComparison(self.team_analyzer, self.console)
             self.team_visualizer = TeamVisualizer(self.team_analyzer)
     
     def display_team_menu(self):
-        """Affiche le menu d'analyse d'équipe"""
+        """Display team analysis menu"""
         menu_panel = Panel.fit(
-            "[bold cyan]Analyse d'équipe - Aezurly & Coéquipiers vs Adversaires[/bold cyan]\n\n"
-            "[1] Voir l'équipe d'Aezurly (coéquipiers identifiés)\n"
-            "[2] Résumé de l'équipe par position\n"
-            "[3] Comparer un joueur spécifique aux adversaires\n"
-            "[4] Vue d'ensemble d'une position\n"
-            "[5] Graphique radar - Comparaison joueur vs adversaires\n"
-            "[6] Graphique de performance de l'équipe\n"
-            "[7] Comparaison détaillée d'un joueur\n"
-            "[8] Comparer tous les joueurs d'une position\n"
-            "[9] Retour au menu principal",
-            title="[bold]Menu Analyse d'Équipe[/bold]",
+            "[bold cyan]Team Analysis - Aezurly & Teammates vs Opponents[/bold cyan]\n\n"
+            "[1] View Aezurly's team (identified teammates)\n"
+            "[2] Team summary by position\n"
+            "[3] Compare specific player to opponents\n"
+            "[4] Position overview\n"
+            "[5] Radar chart - Player vs opponents comparison\n"
+            "[6] Team performance chart\n"
+            "[7] Detailed player comparison\n"
+            "[8] Compare all players at a position\n"
+            "[9] Back to main menu",
+            title="[bold]Team Analysis Menu[/bold]",
             border_style="cyan"
         )
         self.console.print(menu_panel)
     
     def show_team_members(self):
-        """Affiche tous les membres de l'équipe d'Aezurly"""
+        """Display all Aezurly's team members"""
         self.initialize_analyzers()
         teammates = self.team_analyzer.get_marmotte_flip_players_list()
         
-        self.console.print(f"\n[bold green]Équipe d'Aezurly ({len(teammates) + 1} joueurs au total):[/bold green]")
-        self.console.print(f"[cyan]• Aezurly[/cyan] (joueur cible)")
+        self.console.print(f"\n[bold green]Aezurly's Team ({len(teammates) + 1} total players):[/bold green]")
+        self.console.print("[cyan]• Aezurly[/cyan] (target player)")
         
         for teammate in teammates:
             self.console.print(f"[cyan]• {fix_encoding(teammate)}[/cyan]")
         
-        self.console.print(f"\n[dim]Basé sur l'analyse de {self.team_analyzer.games_analyzed} jeux[/dim]")
+        self.console.print(f"\n[dim]Based on analysis of {self.team_analyzer.games_analyzed} games[/dim]")
     
     def show_team_summary(self):
-        """Affiche le résumé de l'équipe par position"""
+        """Display team summary by position"""
         self.initialize_analyzers()
         self.position_comparison.display_team_summary()
     
     def compare_specific_player(self):
-        """Compare un joueur spécifique aux adversaires"""
+        """Compare a specific player to opponents"""
         self.initialize_analyzers()
         
-        # Afficher les positions disponibles
+        # Display available positions
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Positions disponibles: {', '.join(positions)}[/yellow]")
+        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
         
-        position = Prompt.ask("Entrez la position").upper()
+        position = Prompt.ask(self.PROMPT_POSITION).upper()
         
         if position not in positions:
-            self.console.print(f"[red]Position '{position}' non trouvée[/red]")
+            self.console.print(f"[red]Position '{position}' not found[/red]")
             return
         
-        # Afficher nos joueurs à cette position
+        # Display our players at this position
         our_players = self.team_analyzer.get_our_players_by_position(position)
         
         if not our_players:
-            self.console.print(f"[red]Aucun de nos joueurs trouvé en position {position}[/red]")
+            self.console.print(f"[red]No players found at position {position}[/red]")
             return
         
-        self.console.print(f"\n[yellow]Nos joueurs en {position}: {', '.join([fix_encoding(p) for p in our_players])}[/yellow]")
+        self.console.print(f"\n[yellow]Our players at {position}: {', '.join([fix_encoding(p) for p in our_players])}[/yellow]")
         
-        player_name = Prompt.ask("Entrez le nom du joueur")
+        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
         
         if player_name not in our_players:
-            self.console.print(f"[red]Joueur '{player_name}' non trouvé en position {position}[/red]")
+            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
             return
         
         self.position_comparison.display_player_comparison(player_name, position)
     
     def show_position_overview(self):
-        """Affiche la vue d'ensemble d'une position"""
+        """Display position overview"""
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Positions disponibles: {', '.join(positions)}[/yellow]")
+        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
         
-        position = Prompt.ask("Entrez la position").upper()
+        position = Prompt.ask(self.PROMPT_POSITION).upper()
         
         if position not in positions:
-            self.console.print(f"[red]Position '{position}' non trouvée[/red]")
+            self.console.print(f"[red]Position '{position}' not found[/red]")
             return
         
         self.position_comparison.display_position_overview(position)
     
     def plot_radar_comparison(self):
-        """Crée un graphique radar pour comparer un joueur"""
+        """Create radar chart to compare a player"""
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Positions disponibles: {', '.join(positions)}[/yellow]")
+        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
         
-        position = Prompt.ask("Entrez la position").upper()
+        position = Prompt.ask(self.PROMPT_POSITION).upper()
         
         if position not in positions:
-            self.console.print(f"[red]Position '{position}' non trouvée[/red]")
+            self.console.print(f"[red]Position '{position}' not found[/red]")
             return
         
         our_players = self.team_analyzer.get_our_players_by_position(position)
         
         if not our_players:
-            self.console.print(f"[red]Aucun de nos joueurs trouvé en position {position}[/red]")
+            self.console.print(f"[red]No players found at position {position}[/red]")
             return
-        
-        self.console.print(f"\n[yellow]Nos joueurs en {position}: {', '.join([fix_encoding(p) for p in our_players])}[/yellow]")
-        
-        player_name = Prompt.ask("Entrez le nom du joueur")
+        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
         
         if player_name not in our_players:
-            self.console.print(f"[red]Joueur '{player_name}' non trouvé en position {position}[/red]")
+            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
             return
         
         self.team_visualizer.plot_position_comparison_radar(player_name, position)
     
     def plot_team_performance(self):
-        """Affiche le graphique de performance de l'équipe"""
+        """Display team performance chart"""
         self.initialize_analyzers()
         self.team_visualizer.plot_team_performance_overview()
     
     def plot_detailed_comparison(self):
-        """Affiche une comparaison détaillée d'un joueur"""
+        """Display detailed player comparison"""
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Positions disponibles: {', '.join(positions)}[/yellow]")
+        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
         
-        position = Prompt.ask("Entrez la position").upper()
+        position = Prompt.ask(self.PROMPT_POSITION).upper()
         
         if position not in positions:
-            self.console.print(f"[red]Position '{position}' non trouvée[/red]")
+            self.console.print(f"[red]Position '{position}' not found[/red]")
             return
         
         our_players = self.team_analyzer.get_our_players_by_position(position)
         
         if not our_players:
-            self.console.print(f"[red]Aucun de nos joueurs trouvé en position {position}[/red]")
+            self.console.print(f"[red]No players found at position {position}[/red]")
             return
-        
-        self.console.print(f"\n[yellow]Nos joueurs en {position}: {', '.join([fix_encoding(p) for p in our_players])}[/yellow]")
-        
-        player_name = Prompt.ask("Entrez le nom du joueur")
+        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
         
         if player_name not in our_players:
-            self.console.print(f"[red]Joueur '{player_name}' non trouvé en position {position}[/red]")
+            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
             return
         
         self.team_visualizer.plot_detailed_comparison(player_name, position)
     
     def plot_all_players_position(self):
-        """Compare tous les joueurs d'une position"""
+        """Compare all players at a position"""
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Positions disponibles: {', '.join(positions)}[/yellow]")
+        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
         
-        position = Prompt.ask("Entrez la position").upper()
+        position = Prompt.ask(self.PROMPT_POSITION).upper()
         
         if position not in positions:
-            self.console.print(f"[red]Position '{position}' non trouvée[/red]")
+            self.console.print(f"[red]Position '{position}' not found[/red]")
             return
         
         self.team_visualizer.plot_all_players_at_position(position)
     
     def back_to_main_menu(self):
-        """Retour au menu principal"""
+        """Back to main menu"""
         return False
     
     def setup_command_map(self):
-        """Configure la correspondance des commandes"""
+        """Set up command mapping"""
         self.command_map = {
             "1": self.show_team_members,
             "2": self.show_team_summary,
@@ -203,23 +201,23 @@ class TeamMenuHandler:
         }
     
     def get_user_choice(self):
-        """Récupère le choix de l'utilisateur"""
-        return Prompt.ask("Votre choix", choices=list(self.command_map.keys()))
+        """Get user choice"""
+        return Prompt.ask("Your choice", choices=list(self.command_map.keys()))
     
     def execute_choice(self, choice):
-        """Exécute le choix de l'utilisateur"""
+        """Execute user choice"""
         return self.command_map[choice]()
     
     def run_menu_loop(self):
-        """Lance la boucle du menu d'analyse d'équipe"""
+        """Run team analysis menu loop"""
         while True:
             self.display_team_menu()
             choice = self.get_user_choice()
             
             result = self.execute_choice(choice)
-            if result is False:  # Signal pour retourner au menu principal
+            if result is False:  # Signal to return to main menu
                 break
             
-            # Pause avant de continuer
-            self.console.print("\n[dim]Appuyez sur Entrée pour continuer...[/dim]")
+            # Pause before continuing
+            self.console.print("\n[dim]Press Enter to continue...[/dim]")
             input()

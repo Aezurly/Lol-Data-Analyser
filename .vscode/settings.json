@@ -1,16 +1,27 @@
 {
     "cSpell.words": [
+        "aezurly",
+        "Aezurly",
         "autopct",
+        "axhline",
         "cpython",
         "darkred",
         "figsize",
         "fontsize",
+        "fontweight",
+        "lightcoral",
+        "lightgreen",
+        "linestyle",
         "pycache",
         "skyblue",
+        "textcoords",
         "vizualizer",
         "xticklabels",
         "xticks",
+        "xytext",
         "ylabel",
+        "ylim",
+        "yticklabels",
         "yticks"
     ]
 }
