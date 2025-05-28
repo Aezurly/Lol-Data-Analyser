@@ -20,6 +20,18 @@ console = Console()
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
 
+def fix_encoding(text):
+    """Fix encoding issues in text (convert from Latin-1 to UTF-8)"""
+    if not isinstance(text, str):
+        return text
+    try:
+        return text.encode('latin-1').decode('utf-8')
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        try:
+            return text.encode('windows-1252').decode('utf-8')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            return text
+
 if __name__ == "__main__":
     file_path = "game1.json"
     game = GameData(file_path)
@@ -36,8 +48,10 @@ if __name__ == "__main__":
 
         for participant in game.get_all_participants():
             name_style = "blue" if participant.get_team() == "100" else "red"
+
+            fixed_name = fix_encoding(participant.get_name())
             table.add_row(
-                f"[{name_style}]{participant.get_name()}[/{name_style}]",
+                f"[{name_style}]{fixed_name}[/{name_style}]",
                 participant.get_position(),
                 participant.get_champion(),
                 str(participant.get_total_damage())

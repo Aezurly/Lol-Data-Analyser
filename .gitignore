@@ -1,3 +1,6 @@
 __pycache__/
 __pycache__/*
 
+__pycache__/game_data.cpython-311.pyc
+__pycache__/game_vizualizer.cpython-311.pyc
+__pycache__/participant_data.cpython-311.pyc
