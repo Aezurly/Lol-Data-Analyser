@@ -71,3 +71,86 @@ class MenuHandler:
             self.display_menu()
             choice = self.get_user_choice()
             self.execute_choice(choice)
+
+class MultiGameMenuHandler:
+    """Handles multi-game analysis menu display and user interactions"""
+    
+    def __init__(self, console, analyzer):
+        self.console = console
+        self.analyzer = analyzer
+        self.setup_command_map()
+    
+    def display_multi_game_menu(self):
+        """Display the multi-game analysis menu"""
+        menu_panel = Panel.fit(
+            "[bold cyan]Multi-Game Analysis Menu:[/bold cyan]\n\n"
+            "[1] Show all players summary\n"
+            "[2] Show specific player details\n"
+            "[3] Show top players by average damage\n"
+            "[4] Show top players by average KDA\n"
+            "[5] Back to main menu",
+            title="[bold]Multi-Game Analysis[/bold]",
+            border_style="cyan"
+        )
+        self.console.print(menu_panel)
+    
+    def handle_all_players_summary(self):
+        """Handle showing all players summary"""
+        self.analyzer.print_all_players_summary()
+    
+    def handle_specific_player_details(self):
+        """Handle showing specific player details"""
+        player_name = Prompt.ask("Enter player name")
+        self.analyzer.print_player_summary(player_name)
+    
+    def handle_top_players_by_damage(self):
+        """Handle showing top players by average damage"""
+        limit = int(Prompt.ask("Enter number of top players to show", default="10"))
+        top_players = self.analyzer.get_top_players_by_damage(limit)
+        self.console.print(f"\n[bold]Top {limit} Players by Average Damage:[/bold]")
+        for i, (name, damage) in enumerate(top_players, 1):
+            self.console.print(f"{i}. {name}: {damage:.1f}")
+    
+    def handle_top_players_by_kda(self):
+        """Handle showing top players by average KDA"""
+        limit = int(Prompt.ask("Enter number of top players to show", default="10"))
+        top_players = self.analyzer.get_top_players_by_kda(limit)
+        self.console.print(f"\n[bold]Top {limit} Players by Average KDA:[/bold]")
+        for i, (name, kda) in enumerate(top_players, 1):
+            self.console.print(f"{i}. {name}: {kda:.2f}")
+    
+    def back_to_main_menu(self):
+        """Handle returning to main menu"""
+        return False  # Signal to exit the menu loop
+    
+    def setup_command_map(self):
+        """Setup the command mapping for multi-game menu choices"""
+        self.command_map = {
+            "1": self.handle_all_players_summary,
+            "2": self.handle_specific_player_details,
+            "3": self.handle_top_players_by_damage,
+            "4": self.handle_top_players_by_kda,
+            "5": self.back_to_main_menu
+        }
+    
+    def get_user_choice(self):
+        """Get user menu choice"""
+        return Prompt.ask("[bold]Enter your choice number[/bold]")
+    
+    def execute_choice(self, choice):
+        """Execute the selected menu choice"""
+        action = self.command_map.get(choice)
+        if action:
+            return action()
+        else:
+            self.console.print("[bold red]Invalid choice. Please try again.[/bold red]")
+            return True  # Continue menu loop
+    
+    def run_menu_loop(self):
+        """Run the multi-game analysis menu loop"""
+        while True:
+            self.display_multi_game_menu()
+            choice = self.get_user_choice()
+            should_continue = self.execute_choice(choice)
+            if should_continue is False:
+                break
