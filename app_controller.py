@@ -46,7 +46,7 @@ class AppController:
     
     def analyze_multiple_games(self):
         """Handle multiple games analysis"""
-        analyzer = MultiGameAnalyzer("data")
+        analyzer = MultiGameAnalyzer("data", self.console)
         analyzer.load_all_games()
         
         if analyzer.games_analyzed == 0:

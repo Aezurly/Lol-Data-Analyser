@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 from collections import defaultdict
 from game_data import GameData
 from participant_data import ParticipantData
+import unicodedata
+from utils import setup_console
 
 def fix_encoding(text):
     """Fix encoding issues in text (convert from Latin-1 to UTF-8)"""
@@ -84,24 +86,25 @@ class PlayerStats:
 class MultiGameAnalyzer:
     """Class to analyze multiple games and calculate player averages"""
     
-    def __init__(self, data_directory: str = "data"):
+    def __init__(self, data_directory: str = "data", console=None):
         self.data_directory = data_directory
         self.player_stats: Dict[str, PlayerStats] = {}
         self.games_analyzed = 0
+        self.console = console if console else setup_console()
     
     def load_all_games(self):
         """Load and analyze all games in the data directory"""
         if not os.path.exists(self.data_directory):
-            print(f"Data directory '{self.data_directory}' not found.")
+            self.console.print(f"[bold red]Data directory '{self.data_directory}' not found.[/bold red]")
             return
         
         json_files = [f for f in os.listdir(self.data_directory) if f.endswith('.json')]
         
         if not json_files:
-            print(f"No JSON files found in '{self.data_directory}' directory.")
+            self.console.print(f"[bold red]No JSON files found in '{self.data_directory}' directory.[/bold red]")
             return
         
-        print(f"Found {len(json_files)} game files. Analyzing...")
+        self.console.print(f"[bold cyan]Found {len(json_files)} game files. Analyzing...[/bold cyan]")
         
         for filename in json_files:
             file_path = os.path.join(self.data_directory, filename)
@@ -110,13 +113,13 @@ class MultiGameAnalyzer:
                 if game.data:
                     self._analyze_game(game)
                     self.games_analyzed += 1
-                    print(f"Analyzed: {filename}")
+                    self.console.print(f"[green]Analyzed: {filename}[/green]")
                 else:
-                    print(f"Failed to load: {filename}")
+                    self.console.print(f"[yellow]Failed to load: {filename}[/yellow]")
             except Exception as e:
-                print(f"Error analyzing {filename}: {e}")
+                self.console.print(f"[red]Error analyzing {filename}: {e}[/red]")
         
-        print(f"\nAnalysis complete! Processed {self.games_analyzed} games.")
+        self.console.print(f"\n[bold green]Analysis complete! Processed {self.games_analyzed} games.[/bold green]")
     
     def _analyze_game(self, game: GameData):
         """Analyze a single game and update player stats"""
@@ -156,29 +159,105 @@ class MultiGameAnalyzer:
         )
         return [(name, stats.get_average_kda()) for name, stats in sorted_players[:limit]]
     
+    def find_player(self, player_name: str) -> Optional[str]:
+        """Find a player by name, handling encoding and accent variations"""
+        if player_name in self.player_stats:
+            return player_name
+
+        fixed_name = fix_encoding(player_name)
+        if fixed_name in self.player_stats:
+            return fixed_name
+        
+        def strip_accents(s):
+            return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+
+        for name in self.player_stats:
+            if (strip_accents(name).lower() == strip_accents(player_name).lower() or 
+                strip_accents(name).lower() == strip_accents(fixed_name).lower()):
+                return name
+        return None
+    
     def print_player_summary(self, player_name: str):
         """Print detailed summary for a specific player"""
-        if player_name not in self.player_stats:
-            print(f"Player '{player_name}' not found.")
+        found_player = self._get_player_with_selection(player_name)
+        if not found_player:
             return
         
-        stats = self.player_stats[player_name]
-        print(f"\n=== {stats.name} - Summary ===")
-        print(f"Games played: {stats.games_played}")
-        print(f"Most played champion: {stats.get_most_played_champion()}")
-        print(f"Most played position: {stats.get_most_played_position()}")
-        print(f"Average damage per game: {stats.get_average_damage():.1f}")
-        print(f"Average KDA: {stats.get_average_kda():.2f}")
-        print(f"Average CS/min: {stats.get_average_cs_per_minute():.1f}")
-        print(f"Average vision score/min: {stats.get_average_vision_score_per_minute():.2f}")
-        print(f"Average damage per gold: {stats.get_average_damage_per_gold():.2f}")
+        stats = self.player_stats[found_player]
+        self._display_player_stats(stats)
+    
+    def _get_player_with_selection(self, player_name: str) -> Optional[str]:
+        """Find player or let user select from list if not found"""
+        found_player = self.find_player(player_name)
+        
+        if found_player:
+            return found_player
+        
+        self._show_player_not_found_message(player_name)
+        return self._handle_player_selection()
+    
+    def _show_player_not_found_message(self, player_name: str):
+        """Display player not found message and available players list"""
+        self.console.print(f"[bold red]Player '{player_name}' not found.[/bold red]")
+        self.console.print("[bold yellow]Available players:[/bold yellow]")
+        
+        player_list = sorted(self.player_stats.keys())
+        for i, name in enumerate(player_list, 1):
+            self.console.print(f"  [cyan]{i}. {name}[/cyan]")
+    
+    def _handle_player_selection(self) -> Optional[str]:
+        """Handle user selection of player from list"""
+        player_list = sorted(self.player_stats.keys())
+        
+        try:
+            choice = input("\nEnter player index (or press Enter to cancel): ").strip()
+            if not choice:
+                return None
+                
+            index = int(choice) - 1
+            if 0 <= index < len(player_list):
+                selected_player = player_list[index]
+                self.console.print(f"[green]Selected: {selected_player}[/green]")
+                return selected_player
+            else:
+                self.console.print(f"[bold red]Invalid index. Please enter a number between 1 and {len(player_list)}.[/bold red]")
+                return None
+                
+        except ValueError:
+            self.console.print("[bold red]Invalid input. Please enter a number.[/bold red]")
+            return None
+    
+    def _display_player_stats(self, stats: PlayerStats):
+        """Display formatted player statistics"""
+        self.console.print(f"\n[bold cyan]=== {stats.name} - Summary ===[/bold cyan]")
+        self.console.print(f"[bold]Games played:[/bold] {stats.games_played}")
+        self.console.print(f"[bold]Most played champion:[/bold] [yellow]{stats.get_most_played_champion()}[/yellow]")
+        self.console.print(f"[bold]Most played position:[/bold] [yellow]{stats.get_most_played_position()}[/yellow]")
+        self.console.print(f"[bold]Average damage per game:[/bold] [green]{stats.get_average_damage():.1f}[/green]")
+        self.console.print(f"[bold]Average KDA:[/bold] [green]{stats.get_average_kda():.2f}[/green]")
+        self.console.print(f"[bold]Average CS/min:[/bold] [green]{stats.get_average_cs_per_minute():.1f}[/green]")
+        self.console.print(f"[bold]Average vision score/min:[/bold] [green]{stats.get_average_vision_score_per_minute():.2f}[/green]")
+        self.console.print(f"[bold]Average damage per gold:[/bold] [green]{stats.get_average_damage_per_gold():.2f}[/green]")
     
     def print_all_players_summary(self):
         """Print summary for all players"""
-        print(f"\n=== All Players Summary ({self.games_analyzed} games analyzed) ===")
-        print(f"{'Player':<20} {'Games':<6} {'Avg Damage':<12} {'Avg KDA':<8} {'Main Champion':<15}")
-        print("-" * 70)
+        from rich.table import Table
+        
+        table = Table(title=f"All Players Summary ({self.games_analyzed} games analyzed)")
+        table.add_column("Player", style="cyan", no_wrap=True)
+        table.add_column("Games", justify="center", style="white")
+        table.add_column("Avg Damage", justify="right", style="green")
+        table.add_column("Avg KDA", justify="right", style="yellow")
+        table.add_column("Main Champion", style="magenta")
         
         for player_name in sorted(self.player_stats.keys()):
             stats = self.player_stats[player_name]
-            print(f"{stats.name:<20} {stats.games_played:<6} {stats.get_average_damage():<12.1f} {stats.get_average_kda():<8.2f} {stats.get_most_played_champion():<15}")
+            table.add_row(
+                stats.name,
+                str(stats.games_played),
+                f"{stats.get_average_damage():.1f}",
+                f"{stats.get_average_kda():.2f}",
+                stats.get_most_played_champion()
+            )
+        
+        self.console.print(table)
