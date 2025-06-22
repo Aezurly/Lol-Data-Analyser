@@ -6,6 +6,7 @@ from game_data import GameData
 from participant_data import ParticipantData
 import unicodedata
 from utils import setup_console
+from prompt_helpers import PromptHelpers
 
 def fix_encoding(text):
     """Fix encoding issues in text (convert from Latin-1 to UTF-8)"""
@@ -91,6 +92,7 @@ class MultiGameAnalyzer:
         self.player_stats: Dict[str, PlayerStats] = {}
         self.games_analyzed = 0
         self.console = console if console else setup_console()
+        self.prompt_helpers = PromptHelpers(self.console)
     
     def load_all_games(self):
         """Load and analyze all games in the data directory"""
@@ -208,24 +210,7 @@ class MultiGameAnalyzer:
     def _handle_player_selection(self) -> Optional[str]:
         """Handle user selection of player from list"""
         player_list = sorted(self.player_stats.keys())
-        
-        try:
-            choice = input("\nEnter player index (or press Enter to cancel): ").strip()
-            if not choice:
-                return None
-                
-            index = int(choice) - 1
-            if 0 <= index < len(player_list):
-                selected_player = player_list[index]
-                self.console.print(f"[green]Selected: {selected_player}[/green]")
-                return selected_player
-            else:
-                self.console.print(f"[bold red]Invalid index. Please enter a number between 1 and {len(player_list)}.[/bold red]")
-                return None
-                
-        except ValueError:
-            self.console.print("[bold red]Invalid input. Please enter a number.[/bold red]")
-            return None
+        return self.prompt_helpers.select_from_list(player_list, prompt_text="Select a player by number", allow_cancel=True, display_encoding_fix=True)
     
     def _display_player_stats(self, stats: PlayerStats):
         """Display formatted player statistics"""

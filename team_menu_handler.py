@@ -1,5 +1,5 @@
 from rich.panel import Panel
-from rich.prompt import Prompt
+from prompt_helpers import PromptHelpers
 from team_analyzer import TeamAnalyzer
 from position_comparison import PositionComparison
 from team_visualizer import TeamVisualizer
@@ -17,6 +17,7 @@ class TeamMenuHandler:
         self.team_analyzer = None
         self.position_comparison = None
         self.team_visualizer = None
+        self.prompt_helpers = PromptHelpers(console)
         self.setup_command_map()
     
     def initialize_analyzers(self):
@@ -27,6 +28,20 @@ class TeamMenuHandler:
             self.team_analyzer.load_and_analyze_all_games()
             self.position_comparison = PositionComparison(self.team_analyzer, self.console)
             self.team_visualizer = TeamVisualizer(self.team_analyzer)
+    
+    def select_player_from_position(self, position: str) -> str:
+        our_players = self.team_analyzer.get_our_players_by_position(position)
+        
+        if not our_players:
+            self.prompt_helpers.display_error(f"No players found at position {position}")
+            return None
+
+        if len(our_players) == 1:
+            player_name = our_players[0]
+            self.console.print(f"[cyan]Auto-selected player: {fix_encoding(player_name)}[/cyan]")
+            return player_name
+        else:
+            return self.prompt_helpers.get_player_name(our_players)
     
     def display_team_menu(self):
         """Display team analysis menu"""
@@ -70,27 +85,14 @@ class TeamMenuHandler:
         
         # Display available positions
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
+        position = self.prompt_helpers.get_position(positions)
         
-        position = Prompt.ask(self.PROMPT_POSITION).upper()
-        
-        if position not in positions:
-            self.console.print(f"[red]Position '{position}' not found[/red]")
+        if not position:
             return
         
-        # Display our players at this position
-        our_players = self.team_analyzer.get_our_players_by_position(position)
+        player_name = self.select_player_from_position(position)
         
-        if not our_players:
-            self.console.print(f"[red]No players found at position {position}[/red]")
-            return
-        
-        self.console.print(f"\n[yellow]Our players at {position}: {', '.join([fix_encoding(p) for p in our_players])}[/yellow]")
-        
-        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
-        
-        if player_name not in our_players:
-            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
+        if not player_name:
             return
         
         self.position_comparison.display_player_comparison(player_name, position)
@@ -100,12 +102,9 @@ class TeamMenuHandler:
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
+        position = self.prompt_helpers.get_position(positions)
         
-        position = Prompt.ask(self.PROMPT_POSITION).upper()
-        
-        if position not in positions:
-            self.console.print(f"[red]Position '{position}' not found[/red]")
+        if not position:
             return
         
         self.position_comparison.display_position_overview(position)
@@ -115,23 +114,14 @@ class TeamMenuHandler:
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
+        position = self.prompt_helpers.get_position(positions)
         
-        position = Prompt.ask(self.PROMPT_POSITION).upper()
-        
-        if position not in positions:
-            self.console.print(f"[red]Position '{position}' not found[/red]")
+        if not position:
             return
         
-        our_players = self.team_analyzer.get_our_players_by_position(position)
+        player_name = self.select_player_from_position(position)
         
-        if not our_players:
-            self.console.print(f"[red]No players found at position {position}[/red]")
-            return
-        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
-        
-        if player_name not in our_players:
-            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
+        if not player_name:
             return
         
         self.team_visualizer.plot_position_comparison_radar(player_name, position)
@@ -146,23 +136,14 @@ class TeamMenuHandler:
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
+        position = self.prompt_helpers.get_position(positions)
         
-        position = Prompt.ask(self.PROMPT_POSITION).upper()
-        
-        if position not in positions:
-            self.console.print(f"[red]Position '{position}' not found[/red]")
+        if not position:
             return
         
-        our_players = self.team_analyzer.get_our_players_by_position(position)
+        player_name = self.select_player_from_position(position)
         
-        if not our_players:
-            self.console.print(f"[red]No players found at position {position}[/red]")
-            return
-        player_name = Prompt.ask(self.PROMPT_PLAYER_NAME)
-        
-        if player_name not in our_players:
-            self.console.print(f"[red]Player '{player_name}' not found at position {position}[/red]")
+        if not player_name:
             return
         
         self.team_visualizer.plot_detailed_comparison(player_name, position)
@@ -172,12 +153,9 @@ class TeamMenuHandler:
         self.initialize_analyzers()
         
         positions = self.team_analyzer.get_all_positions()
-        self.console.print(f"\n[yellow]Available positions: {', '.join(positions)}[/yellow]")
+        position = self.prompt_helpers.get_position(positions)
         
-        position = Prompt.ask(self.PROMPT_POSITION).upper()
-        
-        if position not in positions:
-            self.console.print(f"[red]Position '{position}' not found[/red]")
+        if not position:
             return
         
         self.team_visualizer.plot_all_players_at_position(position)
@@ -202,7 +180,7 @@ class TeamMenuHandler:
     
     def get_user_choice(self):
         """Get user choice"""
-        return Prompt.ask("Your choice", choices=list(self.command_map.keys()))
+        return self.prompt_helpers.get_menu_choice(list(self.command_map.keys()), prompt_text="Your choice")
     
     def execute_choice(self, choice):
         """Execute user choice"""
@@ -218,6 +196,4 @@ class TeamMenuHandler:
             if result is False:  # Signal to return to main menu
                 break
             
-            # Pause before continuing
-            self.console.print("\n[dim]Press Enter to continue...[/dim]")
-            input()
+            self.prompt_helpers.pause_for_user()

@@ -222,34 +222,66 @@ class TeamVisualizer:
             ('deaths', 'Deaths'),
             ('assists', 'Assists')
         ]
-        
         # Prepare data
         stat_names = []
         player_values = []
         opponent_values = []
+        raw_player_values = []
+        raw_opponent_values = []
         
         for stat_key, stat_display in all_stats:
             if stat_key in comparison['player_stats'] and stat_key in comparison['opponents_stats']:
                 stat_names.append(stat_display)
-                player_values.append(comparison['player_stats'][stat_key])
-                opponent_values.append(comparison['opponents_stats'][stat_key])
+                player_val = comparison['player_stats'][stat_key]
+                opponent_val = comparison['opponents_stats'][stat_key]
+                
+                raw_player_values.append(player_val)
+                raw_opponent_values.append(opponent_val)
+                
+                # Normalize values to 0-100 scale based on max value for this stat
+                max_val = max(player_val, opponent_val)
+                if max_val > 0:
+                    player_values.append((player_val / max_val) * 100)
+                    opponent_values.append((opponent_val / max_val) * 100)
+                else:
+                    player_values.append(0)
+                    opponent_values.append(0)
         
         # Create chart with subplots
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
         
-        # Chart 1: Absolute values
+        # Chart 1: Normalized values (0-100 scale)
         x = np.arange(len(stat_names))
         width = 0.35
-        ax1.bar(x - width/2, player_values, width, label=fix_encoding(player_name), color='blue', alpha=0.7)
-        ax1.bar(x + width/2, opponent_values, width, label='Opponents', color='red', alpha=0.7)
+        bars1 = ax1.bar(x - width/2, player_values, width, label=fix_encoding(player_name), color='blue', alpha=0.7)
+        bars2 = ax1.bar(x + width/2, opponent_values, width, label='Opponents', color='red', alpha=0.7)
+        
+        # Add raw values as text on bars
+        for i, (bar1, bar2) in enumerate(zip(bars1, bars2)):
+            # Player bar
+            height1 = bar1.get_height()
+            ax1.annotate(f'{raw_player_values[i]:.1f}',
+                        xy=(bar1.get_x() + bar1.get_width() / 2, height1),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=8)
+            
+            # Opponent bar
+            height2 = bar2.get_height()
+            ax1.annotate(f'{raw_opponent_values[i]:.1f}',
+                        xy=(bar2.get_x() + bar2.get_width() / 2, height2),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontsize=8)
         
         ax1.set_xlabel('Statistics')
-        ax1.set_ylabel('Values')
-        ax1.set_title(f'Detailed comparison: {fix_encoding(player_name)} vs Opponents')
+        ax1.set_ylabel('Normalized Values (0-100)')
+        ax1.set_title(f'Normalized comparison: {fix_encoding(player_name)} vs Opponents\n(Raw values shown on bars)')
         ax1.set_xticks(x)
         ax1.set_xticklabels(stat_names, rotation=45, ha='right')
         ax1.legend()
         ax1.grid(True, alpha=0.3)
+        ax1.set_ylim(0, 110)  # Give some space for text annotations
         
         # Chart 2: Percentage differences
         percentage_diffs = []

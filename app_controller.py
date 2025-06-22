@@ -5,7 +5,7 @@ from game_display import GameDisplay
 from menu_handler import MenuHandler, MultiGameMenuHandler
 from multi_game_analyzer import MultiGameAnalyzer
 from team_menu_handler import TeamMenuHandler
-from rich.prompt import Prompt
+from prompt_helpers import PromptHelpers
 from rich.panel import Panel
 
 class AppController:
@@ -13,6 +13,7 @@ class AppController:
     
     def __init__(self):
         self.console = setup_console()
+        self.prompt_helpers = PromptHelpers(self.console)
         
     
     def display_main_menu(self):
@@ -80,7 +81,7 @@ class AppController:
     
     def get_user_choice(self):
         """Get user menu choice"""
-        return Prompt.ask("[bold]Enter your choice number[/bold]")
+        return self.prompt_helpers.get_menu_choice(["1", "2", "3", "4"], prompt_text="Enter your choice number")
     
     def execute_main_choice(self, choice):
         """Execute the selected main menu choice"""
@@ -89,7 +90,7 @@ class AppController:
         if action:
             return action()
         else:
-            self.console.print("[bold red]Invalid choice. Please try again.[/bold red]")
+            self.prompt_helpers.display_error("Invalid choice. Please try again.")
             return True  # Continue main loop
     
     def run(self):

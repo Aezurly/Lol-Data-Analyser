@@ -1,12 +1,13 @@
 from rich.panel import Panel
 from rich.prompt import Prompt
+from prompt_helpers import PromptHelpers
 
 class MenuHandler:
     """Handles menu display and user interactions"""
-    
     def __init__(self, console, visualizer):
         self.console = console
         self.visualizer = visualizer
+        self.prompt_helpers = PromptHelpers(console)
         self.setup_command_map()
     
     def display_menu(self):
@@ -27,15 +28,16 @@ class MenuHandler:
     def handle_position_comparison(self):
         """Handle position comparison chart selection"""
         existing_positions = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
-        self.console.print("[bold yellow]Choose the position to compare (TOP, JUNGLE, MIDDLE, BOTTOM, UTILITY) or ALL:[/bold yellow]")
-        position = Prompt.ask("Enter the position").upper()
+        position = self.prompt_helpers.get_position_with_display(existing_positions, allow_all=True)
+        
+        if not position:
+            return
+            
         if position == "ALL":
             for pos in existing_positions:
                 self.visualizer.plot_position_comparison_spider_chart(pos)
-        elif position in existing_positions:
-            self.visualizer.plot_position_comparison_spider_chart(position)
         else:
-            self.console.print("[bold red]Invalid position. Please try again.[/bold red]")
+            self.visualizer.plot_position_comparison_spider_chart(position)
     
     def setup_command_map(self):
         """Setup the command mapping for menu choices"""
@@ -55,7 +57,7 @@ class MenuHandler:
     
     def get_user_choice(self):
         """Get user menu choice"""
-        return Prompt.ask("[bold]Enter your choice number[/bold]")
+        return self.prompt_helpers.get_menu_choice(list(self.command_map.keys()), prompt_text="Enter your choice number")
     
     def execute_choice(self, choice):
         """Execute the selected menu choice"""
@@ -71,6 +73,7 @@ class MenuHandler:
             self.display_menu()
             choice = self.get_user_choice()
             self.execute_choice(choice)
+            self.prompt_helpers.pause_for_user()
 
 class MultiGameMenuHandler:
     """Handles multi-game analysis menu display and user interactions"""
@@ -78,6 +81,7 @@ class MultiGameMenuHandler:
     def __init__(self, console, analyzer):
         self.console = console
         self.analyzer = analyzer
+        self.prompt_helpers = PromptHelpers(console)
         self.setup_command_map()
     
     def display_multi_game_menu(self):
@@ -100,24 +104,27 @@ class MultiGameMenuHandler:
     
     def handle_specific_player_details(self):
         """Handle showing specific player details"""
-        player_name = Prompt.ask("Enter player name")
-        self.analyzer.print_player_summary(player_name)
+        player_name = self.prompt_helpers.get_player_name(prompt_text="Enter player name")
+        if player_name:
+            self.analyzer.print_player_summary(player_name)
     
     def handle_top_players_by_damage(self):
         """Handle showing top players by average damage"""
-        limit = int(Prompt.ask("Enter number of top players to show", default="10"))
-        top_players = self.analyzer.get_top_players_by_damage(limit)
-        self.console.print(f"\n[bold]Top {limit} Players by Average Damage:[/bold]")
-        for i, (name, damage) in enumerate(top_players, 1):
-            self.console.print(f"{i}. {name}: {damage:.1f}")
+        limit = self.prompt_helpers.get_number_input("Enter number of top players to show", default="10", min_value=1)
+        if limit:
+            top_players = self.analyzer.get_top_players_by_damage(limit)
+            self.console.print(f"\n[bold]Top {limit} Players by Average Damage:[/bold]")
+            for i, (name, damage) in enumerate(top_players, 1):
+                self.console.print(f"{i}. {name}: {damage:.1f}")
     
     def handle_top_players_by_kda(self):
         """Handle showing top players by average KDA"""
-        limit = int(Prompt.ask("Enter number of top players to show", default="10"))
-        top_players = self.analyzer.get_top_players_by_kda(limit)
-        self.console.print(f"\n[bold]Top {limit} Players by Average KDA:[/bold]")
-        for i, (name, kda) in enumerate(top_players, 1):
-            self.console.print(f"{i}. {name}: {kda:.2f}")
+        limit = self.prompt_helpers.get_number_input("Enter number of top players to show", default="10", min_value=1)
+        if limit:
+            top_players = self.analyzer.get_top_players_by_kda(limit)
+            self.console.print(f"\n[bold]Top {limit} Players by Average KDA:[/bold]")
+            for i, (name, kda) in enumerate(top_players, 1):
+                self.console.print(f"{i}. {name}: {kda:.2f}")
     
     def back_to_main_menu(self):
         """Handle returning to main menu"""
@@ -135,7 +142,7 @@ class MultiGameMenuHandler:
     
     def get_user_choice(self):
         """Get user menu choice"""
-        return Prompt.ask("[bold]Enter your choice number[/bold]")
+        return self.prompt_helpers.get_menu_choice(list(self.command_map.keys()), prompt_text="Enter your choice number")
     
     def execute_choice(self, choice):
         """Execute the selected menu choice"""
@@ -143,7 +150,7 @@ class MultiGameMenuHandler:
         if action:
             return action()
         else:
-            self.console.print("[bold red]Invalid choice. Please try again.[/bold red]")
+            self.prompt_helpers.display_error("Invalid choice. Please try again.")
             return True  # Continue menu loop
     
     def run_menu_loop(self):
