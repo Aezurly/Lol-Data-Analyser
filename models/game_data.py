@@ -1,7 +1,7 @@
 # MODEL: Game data representation and business logic for game statistics
 import json
 from typing import List, Optional
-from participant_data import ParticipantData
+from models.participant_data import ParticipantData
 
 class GameData:
     """Class to manage game data."""

@@ -3,8 +3,8 @@ from typing import Dict, List, Set, Optional
 from collections import defaultdict
 import os
 import json
-from game_data import GameData
-from participant_data import ParticipantData
+from models.game_data import GameData
+from models.participant_data import ParticipantData
 from utils import fix_encoding
 
 class TeamAnalyzer:

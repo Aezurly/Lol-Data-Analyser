@@ -2,8 +2,8 @@
 from typing import Optional, List
 from rich.table import Table
 from rich.console import Console
-from multi_game_analyzer import MultiGameAnalyzer, PlayerStats
-from prompt_helpers import PromptHelpers
+from models.multi_game_analyzer import MultiGameAnalyzer, PlayerStats
+from views.prompt_helpers import PromptHelpers
 from utils import fix_encoding
 
 class MultiGameDisplay:

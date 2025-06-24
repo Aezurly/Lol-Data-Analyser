@@ -7,7 +7,7 @@ Supports both single game analysis with visualizations and multi-game
 analysis with player statistics and leaderboards.
 """
 
-from app_controller import AppController
+from controllers.app_controller import AppController
 
 def main():
     """Main entry point for the game analysis application"""

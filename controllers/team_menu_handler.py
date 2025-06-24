@@ -1,9 +1,9 @@
 # CONTROLLER: Menu handler for team analysis and user interactions
 from rich.panel import Panel
-from prompt_helpers import PromptHelpers
-from team_analyzer import TeamAnalyzer
-from position_comparison import PositionComparison
-from team_visualizer import TeamVisualizer
+from views.prompt_helpers import PromptHelpers
+from models.team_analyzer import TeamAnalyzer
+from models.position_comparison import PositionComparison
+from views.team_visualizer import TeamVisualizer
 from utils import fix_encoding
 
 class TeamMenuHandler:

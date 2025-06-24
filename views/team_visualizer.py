@@ -2,8 +2,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict, List
-from team_analyzer import TeamAnalyzer
-from position_comparison import PositionComparison
+from models.team_analyzer import TeamAnalyzer
+from models.position_comparison import PositionComparison
 from utils import fix_encoding
 
 class TeamVisualizer:

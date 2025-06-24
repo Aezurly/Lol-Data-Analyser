@@ -3,8 +3,8 @@ import os
 import json
 from typing import Dict, List, Optional
 from collections import defaultdict
-from game_data import GameData
-from participant_data import ParticipantData
+from models.game_data import GameData
+from models.participant_data import ParticipantData
 import unicodedata
 
 def fix_encoding(text):

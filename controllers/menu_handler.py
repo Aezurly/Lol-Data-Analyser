@@ -1,8 +1,8 @@
 # CONTROLLER: Handles menu display and user interactions for single games
 from rich.panel import Panel
 from rich.prompt import Prompt
-from prompt_helpers import PromptHelpers
-from multi_game_display import MultiGameDisplay
+from views.prompt_helpers import PromptHelpers
+from views.multi_game_display import MultiGameDisplay
 
 class MenuHandler:
     """Handles menu display and user interactions"""

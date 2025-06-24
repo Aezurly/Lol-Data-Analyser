@@ -1,7 +1,7 @@
 # VIEW: Handles game data visualizations and chart generation
 from typing import List
-from participant_data import ParticipantData
-from game_data import GameData
+from models.participant_data import ParticipantData
+from models.game_data import GameData
 import matplotlib.pyplot as plt
 
 
