@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from models.team_analyzer import TeamAnalyzer
 from rich.table import Table
 from rich.console import Console
-from utils import fix_encoding
+from utils.utils import fix_encoding
 
 class PositionComparison:
     """Class to compare performance by position"""

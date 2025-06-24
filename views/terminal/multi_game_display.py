@@ -3,8 +3,8 @@ from typing import Optional, List
 from rich.table import Table
 from rich.console import Console
 from models.multi_game_analyzer import MultiGameAnalyzer, PlayerStats
-from views.prompt_helpers import PromptHelpers
-from utils import fix_encoding
+from views.terminal.prompt_helpers import PromptHelpers
+from utils.utils import fix_encoding
 
 class MultiGameDisplay:
     """Handles display of multi-game analysis results"""

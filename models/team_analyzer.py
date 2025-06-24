@@ -5,7 +5,7 @@ import os
 import json
 from models.game_data import GameData
 from models.participant_data import ParticipantData
-from utils import fix_encoding
+from utils.utils import fix_encoding
 
 class TeamAnalyzer:
     """Class to analyze Marmotte Flip vs opponents"""

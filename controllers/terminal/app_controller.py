@@ -1,12 +1,12 @@
 # CONTROLLER: Main application controller that orchestrates the entire application flow
 from models.game_data import GameData
-from views.game_vizualizer import GameVisualizer
-from utils import setup_console
-from views.game_display import GameDisplay
-from controllers.menu_handler import MenuHandler, MultiGameMenuHandler
+from views.shared.game_vizualizer import GameVisualizer
+from utils.utils import setup_console
+from views.terminal.game_display import GameDisplay
+from controllers.terminal.menu_handler import MenuHandler, MultiGameMenuHandler
 from models.multi_game_analyzer import MultiGameAnalyzer
-from controllers.team_menu_handler import TeamMenuHandler
-from views.prompt_helpers import PromptHelpers
+from controllers.terminal.team_menu_handler import TeamMenuHandler
+from views.terminal.prompt_helpers import PromptHelpers
 from rich.panel import Panel
 
 class AppController:

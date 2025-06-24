@@ -4,7 +4,7 @@ import numpy as np
 from typing import Dict, List
 from models.team_analyzer import TeamAnalyzer
 from models.position_comparison import PositionComparison
-from utils import fix_encoding
+from utils.utils import fix_encoding
 
 class TeamVisualizer:
     """Class for creating team comparison visualizations"""

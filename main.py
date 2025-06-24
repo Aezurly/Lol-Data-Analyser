@@ -2,17 +2,30 @@
 """
 League of Legends Game Analysis Tool
 
-A command-line application for analyzing League of Legends game data.
-Supports both single game analysis with visualizations and multi-game 
-analysis with player statistics and leaderboards.
+Supports both terminal and web (Streamlit) interfaces for analyzing 
+League of Legends game data with visualizations and statistics.
 """
 
-from controllers.app_controller import AppController
+import sys
+import subprocess
+from config import INTERFACE_MODE, InterfaceMode
 
 def main():
     """Main entry point for the game analysis application"""
-    app = AppController()
-    app.run()
+    print(f"Starting LoL Data Analyzer in {INTERFACE_MODE.value} mode...")
+    
+    if INTERFACE_MODE == InterfaceMode.STREAMLIT:
+        # Launch Streamlit application
+        subprocess.run([
+            sys.executable, "-m", "streamlit", "run", 
+            "views/streamlit/streamlit_app.py",
+            "--server.port=8501"
+        ])
+    else:
+        # Launch terminal application
+        from controllers.terminal.app_controller import AppController
+        app = AppController()
+        app.run()
 
 if __name__ == "__main__":
     main()

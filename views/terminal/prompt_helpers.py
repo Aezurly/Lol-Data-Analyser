@@ -2,7 +2,7 @@
 from rich.prompt import Prompt
 from rich.console import Console
 from typing import List, Optional, Dict, Union
-from utils import fix_encoding
+from utils.utils import fix_encoding
 
 class PromptHelpers:
     """Centralized helper class for user prompts and interactions"""

@@ -1,10 +1,10 @@
 # CONTROLLER: Menu handler for team analysis and user interactions
 from rich.panel import Panel
-from views.prompt_helpers import PromptHelpers
+from views.terminal.prompt_helpers import PromptHelpers
 from models.team_analyzer import TeamAnalyzer
 from models.position_comparison import PositionComparison
-from views.team_visualizer import TeamVisualizer
-from utils import fix_encoding
+from views.shared.team_visualizer import TeamVisualizer
+from utils.utils import fix_encoding
 
 class TeamMenuHandler:
     """Menu handler for Aezurly's team analysis"""
