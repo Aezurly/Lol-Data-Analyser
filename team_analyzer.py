@@ -1,3 +1,4 @@
+# MODEL: Team analysis logic and business rules for Marmotte Flip vs opponents
 from typing import Dict, List, Set, Optional
 from collections import defaultdict
 import os

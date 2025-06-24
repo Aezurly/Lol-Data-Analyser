@@ -1,3 +1,4 @@
+# VIEW: Handles game data visualizations and chart generation
 from typing import List
 from participant_data import ParticipantData
 from game_data import GameData

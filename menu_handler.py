@@ -1,6 +1,8 @@
+# CONTROLLER: Handles menu display and user interactions for single games
 from rich.panel import Panel
 from rich.prompt import Prompt
 from prompt_helpers import PromptHelpers
+from multi_game_display import MultiGameDisplay
 
 class MenuHandler:
     """Handles menu display and user interactions"""
@@ -81,6 +83,7 @@ class MultiGameMenuHandler:
     def __init__(self, console, analyzer):
         self.console = console
         self.analyzer = analyzer
+        self.display = MultiGameDisplay(console, analyzer)
         self.prompt_helpers = PromptHelpers(console)
         self.setup_command_map()
     
@@ -93,38 +96,31 @@ class MultiGameMenuHandler:
             "[3] Show top players by average damage\n"
             "[4] Show top players by average KDA\n"
             "[5] Back to main menu",
-            title="[bold]Multi-Game Analysis[/bold]",
-            border_style="cyan"
+            title="[bold]Multi-Game Analysis[/bold]",            border_style="cyan"
         )
         self.console.print(menu_panel)
     
     def handle_all_players_summary(self):
         """Handle showing all players summary"""
-        self.analyzer.print_all_players_summary()
+        self.display.display_all_players_summary()
     
     def handle_specific_player_details(self):
         """Handle showing specific player details"""
         player_name = self.prompt_helpers.get_player_name(prompt_text="Enter player name")
         if player_name:
-            self.analyzer.print_player_summary(player_name)
+            self.display.display_player_summary(player_name)
     
     def handle_top_players_by_damage(self):
         """Handle showing top players by average damage"""
         limit = self.prompt_helpers.get_number_input("Enter number of top players to show", default="10", min_value=1)
         if limit:
-            top_players = self.analyzer.get_top_players_by_damage(limit)
-            self.console.print(f"\n[bold]Top {limit} Players by Average Damage:[/bold]")
-            for i, (name, damage) in enumerate(top_players, 1):
-                self.console.print(f"{i}. {name}: {damage:.1f}")
+            self.display.display_top_players_by_damage(limit)
     
     def handle_top_players_by_kda(self):
         """Handle showing top players by average KDA"""
         limit = self.prompt_helpers.get_number_input("Enter number of top players to show", default="10", min_value=1)
         if limit:
-            top_players = self.analyzer.get_top_players_by_kda(limit)
-            self.console.print(f"\n[bold]Top {limit} Players by Average KDA:[/bold]")
-            for i, (name, kda) in enumerate(top_players, 1):
-                self.console.print(f"{i}. {name}: {kda:.2f}")
+            self.display.display_top_players_by_kda(limit)
     
     def back_to_main_menu(self):
         """Handle returning to main menu"""

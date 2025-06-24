@@ -1,3 +1,4 @@
+# MODEL: Participant data representation and business logic for player statistics
 class ParticipantData:
     """Class to manage participant data."""
     def __init__(self, data: dict):

@@ -1,3 +1,4 @@
+# MODEL: Game data representation and business logic for game statistics
 import json
 from typing import List, Optional
 from participant_data import ParticipantData
@@ -6,6 +7,7 @@ class GameData:
     """Class to manage game data."""
     def __init__(self, file_path: str):
         self.file_path = file_path
+    
         self.data = self._load_data()
         self.participants = self._load_participants()
 
@@ -15,10 +17,11 @@ class GameData:
             with open(self.file_path, 'r') as file:
                 return json.load(file)
         except FileNotFoundError:
-            print(f"File not found: {self.file_path}")
+            # Model should not print directly - let the controller handle display
+            return None
         except json.JSONDecodeError:
-            print(f"Error decoding JSON from file: {self.file_path}")
-        return None
+            # Model should not print directly - let the controller handle display
+            return None
 
     def _load_participants(self) -> List[ParticipantData]:
         """Load participant data."""

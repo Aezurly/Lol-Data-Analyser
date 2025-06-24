@@ -1,3 +1,4 @@
+# CONTROLLER: Main application controller that orchestrates the entire application flow
 from game_data import GameData
 from game_vizualizer import GameVisualizer
 from utils import setup_console
@@ -50,7 +51,7 @@ class AppController:
     
     def analyze_multiple_games(self):
         """Handle multiple games analysis"""
-        analyzer = MultiGameAnalyzer("data", self.console)
+        analyzer = MultiGameAnalyzer("data")
         analyzer.load_all_games()
         
         if analyzer.games_analyzed == 0:

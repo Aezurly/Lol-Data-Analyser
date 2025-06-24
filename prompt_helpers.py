@@ -1,3 +1,4 @@
+# VIEW: Centralized helper for user prompts and console interactions
 from rich.prompt import Prompt
 from rich.console import Console
 from typing import List, Optional, Dict, Union

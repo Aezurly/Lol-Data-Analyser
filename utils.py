@@ -1,3 +1,4 @@
+# UTILITY: Shared utilities for console setup and text encoding
 import sys
 from rich.console import Console
 from colorama import init

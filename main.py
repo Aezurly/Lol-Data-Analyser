@@ -1,3 +1,4 @@
+# CONTROLLER: Main entry point that coordinates application startup
 """
 League of Legends Game Analysis Tool
 

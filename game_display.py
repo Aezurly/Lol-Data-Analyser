@@ -1,3 +1,4 @@
+# VIEW: Handles console display of game information and participant data
 from rich.table import Table
 from utils import fix_encoding
 

@@ -1,3 +1,4 @@
+# MODEL: Position comparison logic and statistical calculations
 from typing import Dict, List, Optional
 from team_analyzer import TeamAnalyzer
 from rich.table import Table

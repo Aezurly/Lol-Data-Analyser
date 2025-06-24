@@ -1,3 +1,4 @@
+# CONTROLLER: Menu handler for team analysis and user interactions
 from rich.panel import Panel
 from prompt_helpers import PromptHelpers
 from team_analyzer import TeamAnalyzer
