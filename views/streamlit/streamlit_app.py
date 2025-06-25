@@ -14,20 +14,25 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if project_root not in sys.path:
     sys.path.append(project_root)
 
+# Import page modules with try/except for better error handling
+try:
+    from views.streamlit.pages.single_game import single_game_page
+    from views.streamlit.pages.multi_game import multi_game_page  
+    from views.streamlit.pages.team_analysis import team_analysis_page
+except ImportError as e:
+    st.error(f"Error importing page modules: {e}")
+    st.stop()
+
 # Configure Streamlit page
 st.set_page_config(**STREAMLIT_CONFIG)
 
-def main():
-    """Main Streamlit application"""
+def show_welcome_page():
+    """Show the welcome/home page"""
     
     # Header
     st.title("🎮 LoL Data Analyzer")
     st.subheader(f"Version {APP_VERSION}")
     st.write(APP_DESCRIPTION)
-    
-    # Sidebar
-    st.sidebar.title("🎯 Navigation")
-    st.sidebar.write("Welcome to the Streamlit interface!")
     
     # Main content
     st.header("📊 Application Status")
@@ -46,8 +51,82 @@ def main():
     else:
         st.error(f"❌ Data directory not found: {DATA_DIRECTORY}")
     
-    # Test features
-    st.header("🧪 Test Features")
+    # Quick navigation
+    st.header("🚀 Quick Start")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📊 Single Game Analysis", use_container_width=True):
+            st.session_state.page = "single_game"
+            st.rerun()
+    
+    with col2:
+        if st.button("📈 Multi Game Analysis", use_container_width=True):
+            st.session_state.page = "multi_game"
+            st.rerun()
+    
+    with col3:
+        if st.button("🏆 Team Analysis", use_container_width=True):
+            st.session_state.page = "team_analysis"
+            st.rerun()
+
+def show_sidebar_navigation():
+    """Show the sidebar navigation"""
+    st.sidebar.title("🎯 Navigation")
+    
+    # Navigation menu
+    page = st.sidebar.selectbox(
+        "Choose a section:",
+        ["🏠 Home", "📊 Single Game", "📈 Multi Game", "🏆 Team Analysis"],
+        key="navigation"
+    )
+    
+    # Map display names to page keys
+    page_mapping = {
+        "🏠 Home": "home",
+        "📊 Single Game": "single_game", 
+        "📈 Multi Game": "multi_game",
+        "🏆 Team Analysis": "team_analysis"
+    }
+    
+    selected_page = page_mapping[page]
+    
+    # Update session state if page changed
+    if "page" not in st.session_state or st.session_state.page != selected_page:
+        st.session_state.page = selected_page
+        st.rerun()
+    
+    # Show current data status in sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📁 Data Status")
+    
+    if os.path.exists(DATA_DIRECTORY):
+        json_files = [f for f in os.listdir(DATA_DIRECTORY) if f.endswith('.json')]
+        st.sidebar.success(f"✅ {len(json_files)} games available")
+    else:
+        st.sidebar.error("❌ No data directory")
+
+def main():
+    """Main Streamlit application"""
+    
+    # Initialize session state
+    if "page" not in st.session_state:
+        st.session_state.page = "home"
+    
+    # Show sidebar navigation
+    show_sidebar_navigation()
+    
+    # Route to appropriate page
+    if st.session_state.page == "home":
+        show_welcome_page()
+    elif st.session_state.page == "single_game":
+        single_game_page()
+    elif st.session_state.page == "multi_game":
+        multi_game_page()
+    elif st.session_state.page == "team_analysis":
+        team_analysis_page()
+    else:
+        show_welcome_page()  # Fallback to home
     
     col1, col2, col3 = st.columns(3)
     
