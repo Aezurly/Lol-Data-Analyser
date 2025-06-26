@@ -1,6 +1,7 @@
-./__pycache__/
-/__pycache__/*
-
-__pycache__/game_data.cpython-311.pyc
-__pycache__/game_vizualizer.cpython-311.pyc
-__pycache__/participant_data.cpython-311.pyc
+# Python cache files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
