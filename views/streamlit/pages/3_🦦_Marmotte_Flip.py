@@ -17,6 +17,13 @@ from models.position_comparison import PositionComparison
 from views.shared.team_visualizer import TeamVisualizer
 from utils.utils import fix_encoding
 
+# Configure page
+st.set_page_config(
+    page_title="Marmotte Flip",
+    page_icon="⚔️",
+    layout="wide"
+)
+
 POSITIONS = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
 POSITION_MAP = {
     "TOP": "1",
@@ -43,7 +50,7 @@ def load_team_analyzer():
 
 def display_team_overview(analyzer):
     """Display team overview and summary statistics"""
-    st.subheader("🏆 Team Overview")
+    st.subheader("🦦 Team Overview")
     
     # Get list of all Marmotte Flip players
     marmotte_players = analyzer.get_marmotte_flip_players_list()
@@ -152,31 +159,49 @@ def display_position_comparison(analyzer, position_comparison):
             return
         
         st.write(f"**Comparing {selected_position} players**")
-        
-        # Display comparison data
+          # Display comparison data
         try:
-            # Get comparison data (simplified version of radar chart data)
-            our_stats = position_comparison.get_our_team_position_stats(selected_position)
-            opponent_stats = position_comparison.get_opponent_position_stats(selected_position)
+            # Get comparison data using available methods
+            our_stats = None
+            opponent_stats = analyzer.get_opponents_average_stats(selected_position)
+            
+            # Calculate average stats for our team at this position
+            our_players = analyzer.get_our_players_by_position(selected_position)
+            our_player_stats_list = []
+            
+            for player in our_players:
+                player_stats = analyzer.get_player_average_stats(player, selected_position)
+                if player_stats:
+                    our_player_stats_list.append(player_stats)
+              # Calculate averages for our team
+            if our_player_stats_list:
+                our_stats = {
+                    'avg_kills': sum(stats.get('kills', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
+                    'avg_deaths': sum(stats.get('deaths', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
+                    'avg_assists': sum(stats.get('assists', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
+                    'avg_damage': sum(stats.get('damage', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
+                    'avg_cs': sum(stats.get('cs', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
+                    'avg_vision_score': sum(stats.get('vision_score', 0) for stats in our_player_stats_list) / len(our_player_stats_list)
+                }
             
             if our_stats and opponent_stats:
-                # Create comparison chart
-                metrics = ['Avg Kills', 'Avg Deaths', 'Avg Assists', 'Avg Damage', 'Avg Gold', 'Avg CS']
+                # Create comparison chart using fields that actually exist
+                metrics = ['Avg Kills', 'Avg Deaths', 'Avg Assists', 'Avg Damage', 'Avg CS', 'Avg Vision']
                 our_values = [
                     our_stats.get('avg_kills', 0),
                     our_stats.get('avg_deaths', 0),
                     our_stats.get('avg_assists', 0),
                     our_stats.get('avg_damage', 0),
-                    our_stats.get('avg_gold', 0),
-                    our_stats.get('avg_cs', 0)
+                    our_stats.get('avg_cs', 0),
+                    our_stats.get('avg_vision_score', 0)
                 ]
                 opponent_values = [
-                    opponent_stats.get('avg_kills', 0),
-                    opponent_stats.get('avg_deaths', 0),
-                    opponent_stats.get('avg_assists', 0),
-                    opponent_stats.get('avg_damage', 0),
-                    opponent_stats.get('avg_gold', 0),
-                    opponent_stats.get('avg_cs', 0)
+                    opponent_stats.get('kills', 0),
+                    opponent_stats.get('deaths', 0),
+                    opponent_stats.get('assists', 0),
+                    opponent_stats.get('damage', 0),
+                    opponent_stats.get('cs', 0),
+                    opponent_stats.get('vision_score', 0)
                 ]
                 
                 # Create comparison DataFrame
@@ -275,9 +300,9 @@ def display_team_vs_opponents_radar(team_visualizer):
     except Exception as e:
         st.error(f"Error creating radar chart: {str(e)}")
 
-def team_analysis_page():
+def main():
     """Main team analysis page"""
-    st.title("🏆 Team Analysis")
+    st.title("🦦 Team Analysis")
     st.write("Marmotte Flip vs Opponents Analysis")
     
     try:
@@ -307,3 +332,10 @@ def team_analysis_page():
     except Exception as e:
         st.error(f"❌ Error in team analysis: {str(e)}")
         st.info("Please check that the data directory contains valid JSON game files.")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
+else:
+    # When imported as a page, run directly
+    main()

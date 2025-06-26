@@ -25,6 +25,7 @@ class PlayerStats:
     def __init__(self, name: str):
         self.name = fix_encoding(name)  # Fix encoding for player name
         self.games_played = 0
+        self.total_wins = 0
         self.total_damage = 0
         self.total_kills = 0
         self.total_deaths = 0
@@ -39,6 +40,8 @@ class PlayerStats:
     def add_game_stats(self, participant: ParticipantData, game_duration: int):
         """Add stats from a single game"""
         self.games_played += 1
+        if participant.get_win():
+            self.total_wins += 1
         self.total_damage += participant.get_total_damage()
         self.total_kills += participant.get_kills()
         self.total_deaths += participant.get_deaths()
@@ -71,6 +74,11 @@ class PlayerStats:
         total_minutes = self.total_game_duration / 60 if self.total_game_duration > 0 else 0
         return self.total_vision_score / total_minutes if total_minutes > 0 else 0
     
+    def get_average_damage_per_minute(self) -> float:
+        """Get average damage per minute"""
+        total_minutes = self.total_game_duration / 60 if self.total_game_duration > 0 else 0
+        return self.total_damage / total_minutes if total_minutes > 0 else 0
+    
     def get_average_damage_per_gold(self) -> float:
         """Get average damage per gold spent"""
         return self.total_damage / self.total_gold_spent if self.total_gold_spent > 0 else 0
@@ -81,7 +89,20 @@ class PlayerStats:
     
     def get_most_played_position(self) -> str:
         """Get most played position"""
-        return max(self.positions_played.items(), key=lambda x: x[1])[0] if self.positions_played else "Unknown"
+        position = max(self.positions_played.items(), key=lambda x: x[1])[0]
+        if position == "BOTTOM":
+            return "ADC"
+        if position == "UTILITY":
+            return "SUP"
+        if position == "JUNGLE":
+            return "JGL"
+        if position == "MIDDLE":
+            return "MID"
+        return position if position else "Unknown"
+    
+    def get_win_rate(self) -> float:
+        """Get win rate based on games played"""
+        return (self.total_wins / self.games_played) if self.games_played > 0 else 0.0
 
 class MultiGameAnalyzer:
     """Class to analyze multiple games and calculate player averages"""

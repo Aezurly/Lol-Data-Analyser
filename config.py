@@ -6,7 +6,7 @@ class InterfaceMode(Enum):
     STREAMLIT = "streamlit"
 
 # Feature flag - peut être défini par variable d'environnement
-INTERFACE_MODE = InterfaceMode(os.getenv('LOL_INTERFACE_MODE', 'terminal'))
+INTERFACE_MODE = InterfaceMode.STREAMLIT
 
 # Autres configurations
 DATA_DIRECTORY = "data"

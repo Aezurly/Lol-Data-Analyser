@@ -14,6 +14,13 @@ from plotly.subplots import make_subplots
 from models.multi_game_analyzer import MultiGameAnalyzer
 from utils.utils import fix_encoding
 
+# Configure page
+st.set_page_config(
+    page_title="Global Stats",
+    page_icon="⚔️",
+    layout="wide"
+)
+
 def load_multi_game_analyzer():
     """Load and cache the multi-game analyzer"""
     if 'multi_game_analyzer' not in st.session_state:
@@ -27,39 +34,51 @@ def load_multi_game_analyzer():
 
 def display_player_rankings(analyzer):
     """Display player rankings table"""
-    st.subheader("🏆 Player Rankings")
+    st.subheader("📋 Player Table")
       # Get player stats and convert to DataFrame
     player_stats = []
     for player_name, stats_obj in analyzer.player_stats.items():
-        if stats_obj.games_played > 0:
+        if stats_obj.games_played > 0:              
             player_stats.append({
                 'Player': fix_encoding(player_name),
-                'Games': stats_obj.games_played,
-                'Avg KDA': round(stats_obj.get_average_kda(), 2),
-                'Avg Damage': round(stats_obj.get_average_damage(), 0),
-                'Most Played': stats_obj.get_most_played_champion(),
                 'Position': stats_obj.get_most_played_position(),
+                'Most Played': stats_obj.get_most_played_champion(),
+                'Games': stats_obj.games_played,
+                'Win Rate': round(stats_obj.get_win_rate(), 1),
+                'Avg KDA': round(stats_obj.get_average_kda(), 2),
                 'CS/min': round(stats_obj.get_average_cs_per_minute(), 1),
-                'Vision/min': round(stats_obj.get_average_vision_score_per_minute(), 2),
-                'DMG/Gold': round(stats_obj.get_average_damage_per_gold(), 2)
+                'Dmg/min': round(stats_obj.get_average_damage_per_minute(), 1),
+                'DMG/Gold': round(stats_obj.get_average_damage_per_gold(), 2),
+                'Vision/min': round(stats_obj.get_average_vision_score_per_minute(), 2),  
+                'Kills/Games': round(stats_obj.total_kills / stats_obj.games_played, 2) if stats_obj.games_played > 0 else 0,
+                'Deaths/Games': round(stats_obj.total_deaths / stats_obj.games_played, 2) if stats_obj.games_played > 0 else 0,
             })
     
     df = pd.DataFrame(player_stats)
-    
     if df.empty:
         st.warning("No player data available")
         return df
-      # Sort options
+    
+    # Sort options
     sort_by = st.selectbox(
         "Sort by:",
-        ['Avg KDA', 'Games', 'Avg Damage', 'CS/min', 'Vision/min'],
-        key="player_rankings_sort"
+        ['Win Rate', 'Avg KDA', 'Games', 'Dmg/min', 'CS/min', 'Vision/min'],
+        key="player_rankings_sort"    
+        )
+    
+    df_sorted = df.sort_values(sort_by, ascending=False)    # Display table with formatted Win Rate column
+    st.dataframe(
+        df_sorted, 
+        use_container_width=True, 
+        hide_index=True,
+        column_config={
+            "Win Rate": st.column_config.NumberColumn(
+                "Win Rate",
+                help="Win rate percentage",
+                format="percent"
+            )
+        }
     )
-    
-    df_sorted = df.sort_values(sort_by, ascending=False)
-    
-    # Display table
-    st.dataframe(df_sorted, use_container_width=True, hide_index=True)
     
     return df_sorted
 
@@ -108,14 +127,13 @@ def display_player_detailed_stats(analyzer, player_name):
     
     with col4:
         st.metric("Avg KDA", f"{stats.get_average_kda():.2f}")
-    
     # Additional detailed metrics
     st.write("**Detailed Statistics:**")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Avg Damage", f"{stats.get_average_damage():.0f}")
+        st.metric("Dmg/min", f"{stats.get_average_damage_per_minute():.1f}")
         st.metric("CS/min", f"{stats.get_average_cs_per_minute():.1f}")
     
     with col2:
@@ -172,9 +190,9 @@ def display_champion_analytics(analyzer):
     else:
         st.warning("No champion data available")
 
-def multi_game_page():
+def main():
     """Main multi-game analysis page"""
-    st.title("📈 Multi-Game Analysis")
+    st.title("🌌 Global Stats")
     st.write("Analyze performance across multiple games")
     
     try:
@@ -190,7 +208,7 @@ def multi_game_page():
         st.success(f"📊 Analyzing {analyzer.games_analyzed} games")
         
         # Main sections
-        tab1, tab2, tab3 = st.tabs(["🏆 Player Rankings", "🔍 Player Search", "🎯 Champion Analytics"])
+        tab1, tab2, tab3 = st.tabs(["📋 Player Table", "🔍 Player Search", "🎯 Champion Analytics"])
         
         with tab1:
             display_player_rankings(analyzer)
@@ -204,3 +222,10 @@ def multi_game_page():
     except Exception as e:
         st.error(f"❌ Error in multi-game analysis: {str(e)}")
         st.info("Please check that the data directory contains valid JSON game files.")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
+else:
+    # When imported as a page, run directly
+    main()

@@ -61,3 +61,11 @@ class GameData:
     def get_team_kills(self, team: str) -> int:
         """Get total kills for a team."""
         return sum(p.get_kills() for p in self.participants if p.get_team() == team)
+    
+    def get_date_string(self) -> str:
+        """Get game date."""
+        date_parts = self.file_path.split('\\')[-1].split('-')[:3]
+        date_parts = [part for part in date_parts if part.isdigit()]
+        if len(date_parts) >= 3:
+            return f"{date_parts[0]}-{date_parts[1]}-{date_parts[2]}"
+        return "Unknown"

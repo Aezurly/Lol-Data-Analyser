@@ -16,6 +16,13 @@ from models.game_data import GameData
 from views.shared.game_vizualizer import GameVisualizer
 from utils.utils import fix_encoding
 
+# Configure page
+st.set_page_config(
+    page_title="Single Game Analysis",
+    page_icon="⚔️",
+    layout="wide"
+)
+
 def get_available_games():
     """Get list of available game files"""
     data_dir = "data"
@@ -30,80 +37,95 @@ def display_game_info(game_data):
         st.error("No game data available")
         return
     
-    info = game_data.data['info']
-    
     # Game info in columns
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Game Duration", f"{info.get('gameDuration', 0) // 60}:{info.get('gameDuration', 0) % 60:02d}")
-    
+        st.metric("Match Date", game_data.get_date_string())
+        
     with col2:
-        st.metric("Game Mode", info.get('gameMode', 'Unknown'))
+        st.metric("Game Duration", game_data.get_game_duration_formatted())
     
     with col3:
-        st.metric("Game Version", info.get('gameVersion', 'Unknown'))
+        st.metric("Game Version", game_data.get_version())
     
-    # Team info
-    teams = info.get('teams', [])
-    if len(teams) >= 2:
+    # Team info - calculate from participants
+    participants = game_data.get_all_participants()
+    team1_participants = [p for p in participants if p.get_team() == "100"]
+    team2_participants = [p for p in participants if p.get_team() == "200"]
+    
+    if team1_participants and team2_participants:
         col1, col2 = st.columns(2)
         
         with col1:
-            team1 = teams[0]
-            team1_win = "Victory" if team1.get('win', False) else "Defeat"
-            st.subheader(f"🔵 Team 1 - {team1_win}")
-            st.write(f"**Kills:** {team1.get('objectives', {}).get('champion', {}).get('kills', 0)}")
-            st.write(f"**Dragons:** {team1.get('objectives', {}).get('dragon', {}).get('kills', 0)}")
-            st.write(f"**Barons:** {team1.get('objectives', {}).get('baron', {}).get('kills', 0)}")
+            team1_wins = any(p.get_win() for p in team1_participants)
+            team1_result = "Victory" if team1_wins else "Defeat"
+            team1_kills = sum(p.get_kills() for p in team1_participants)
+            st.subheader(f"🔵 Team 1 - {team1_result}")
+            st.write(f"**Total Kills:** {team1_kills}")
+            player_names = [fix_encoding(p.get_name()) for p in team1_participants]
+            st.write(f"**Players:** {', '.join(player_names)}")
         
         with col2:
-            team2 = teams[1]
-            team2_win = "Victory" if team2.get('win', False) else "Defeat"
-            st.subheader(f"🔴 Team 2 - {team2_win}")
-            st.write(f"**Kills:** {team2.get('objectives', {}).get('champion', {}).get('kills', 0)}")
-            st.write(f"**Dragons:** {team2.get('objectives', {}).get('dragon', {}).get('kills', 0)}")
-            st.write(f"**Barons:** {team2.get('objectives', {}).get('baron', {}).get('kills', 0)}")
+            team2_wins = any(p.get_win() for p in team2_participants)
+            team2_result = "Victory" if team2_wins else "Defeat"
+            team2_kills = sum(p.get_kills() for p in team2_participants)
+            st.subheader(f"🔴 Team 2 - {team2_result}")
+            st.write(f"**Total Kills:** {team2_kills}")
+            player_names = [fix_encoding(p.get_name()) for p in team2_participants]
+            st.write(f"**Players:** {', '.join(player_names)}")
 
-def display_participants_table(participants):
+def display_participants_table(participants, game_data):
     """Display participants in a table format"""
     if not participants:
         st.warning("No participants data available")
         return
     
+    # Get game duration in minutes using the model method
+    game_duration_seconds = game_data.get_game_duration()
+    game_duration_minutes = max(game_duration_seconds / 60, 1)  # Avoid division by zero
+    
     # Convert participants to DataFrame
     participant_data = []
     for participant in participants:
+        total_damage = participant.get_total_damage()
+        damage_per_minute = round(total_damage / game_duration_minutes, 1)
+        
         participant_data.append({
-            'Player': fix_encoding(participant.get('summonerName', 'Unknown')),
-            'Champion': participant.get('championName', 'Unknown'),
-            'Position': participant.get('teamPosition', 'Unknown'),
-            'Level': participant.get('champLevel', 0),
-            'Kills': participant.get('kills', 0),
-            'Deaths': participant.get('deaths', 0),
-            'Assists': participant.get('assists', 0),
-            'KDA': f"{participant.get('kills', 0)}/{participant.get('deaths', 0)}/{participant.get('assists', 0)}",
-            'CS': participant.get('totalMinionsKilled', 0) + participant.get('neutralMinionsKilled', 0),
-            'Gold': participant.get('goldEarned', 0),
-            'Damage': participant.get('totalDamageDealtToChampions', 0),
-            'Team': "🔵 Team 1" if participant.get('teamId') == 100 else "🔴 Team 2"
+            'Player': fix_encoding(participant.get_name()),
+            'Champion': participant.get_champion(),
+            'Position': participant.get_position(),
+            'Level': participant.get_level(),
+            '(K+A)/D': participant.get_kda(),
+            'KDA': f"{participant.get_kills()}/{participant.get_deaths()}/{participant.get_assists()}",
+            'CS': participant.get_cs(),
+            'Gold': participant.get_gold_spent(),
+            'Dmg/min': damage_per_minute,
+            'Team': "🔵 Team 1" if participant.get_team() == "100" else "🔴 Team 2"
         })
     
     df = pd.DataFrame(participant_data)
     
     # Display table with styling
-    st.subheader("📊 Participants Overview")
+    st.subheader("📊 Players Overview")
+    
+    # Team 1
+    # Determine which teams won
+    team1_won = any(p.get_win() for p in participants if p.get_team() == "100")
+    team2_won = any(p.get_win() for p in participants if p.get_team() == "200")
     
     # Team 1
     team1_df = df[df['Team'] == "🔵 Team 1"].drop('Team', axis=1)
     if not team1_df.empty:
-        st.write("**🔵 Team 1**")
+        team1_status = "• Win 🏆" if team1_won else "• Defeat 💀"
+        st.write(f"**🔵 Team 1 {team1_status}**")
         st.dataframe(team1_df, use_container_width=True, hide_index=True)
     
     # Team 2  
     team2_df = df[df['Team'] == "🔴 Team 2"].drop('Team', axis=1)
     if not team2_df.empty:
-        st.write("**🔴 Team 2**")
+        team2_status = "• Win 🏆" if team2_won else "• Defeat 💀"
+        st.write(f"**🔴 Team 2 {team2_status}**")
         st.dataframe(team2_df, use_container_width=True, hide_index=True)
 
 def create_damage_chart(participants):
@@ -114,9 +136,9 @@ def create_damage_chart(participants):
     data = []
     for participant in participants:
         data.append({
-            'Player': fix_encoding(participant.get('summonerName', 'Unknown')),
-            'Damage': participant.get('totalDamageDealtToChampions', 0),
-            'Team': "Team 1" if participant.get('teamId') == 100 else "Team 2"
+            'Player': fix_encoding(participant.get_name()),
+            'Damage': participant.get_total_damage(),
+            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
         })
     
     df = pd.DataFrame(data)
@@ -142,18 +164,15 @@ def create_kda_chart(participants):
     
     data = []
     for participant in participants:
-        kills = participant.get('kills', 0)
-        deaths = max(participant.get('deaths', 0), 1)  # Avoid division by zero
-        assists = participant.get('assists', 0)
-        kda_ratio = (kills + assists) / deaths
+        kda_ratio = participant.get_kda()
         
         data.append({
-            'Player': fix_encoding(participant.get('summonerName', 'Unknown')),
+            'Player': fix_encoding(participant.get_name()),
             'KDA Ratio': kda_ratio,
-            'Kills': kills,
-            'Deaths': deaths,
-            'Assists': assists,
-            'Team': "Team 1" if participant.get('teamId') == 100 else "Team 2"
+            'Kills': participant.get_kills(),
+            'Deaths': participant.get_deaths(),
+            'Assists': participant.get_assists(),
+            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
         })
     
     df = pd.DataFrame(data)
@@ -181,9 +200,9 @@ def create_vision_chart(participants):
     data = []
     for participant in participants:
         data.append({
-            'Player': fix_encoding(participant.get('summonerName', 'Unknown')),
-            'Vision Score': participant.get('visionScore', 0),
-            'Team': "Team 1" if participant.get('teamId') == 100 else "Team 2"
+            'Player': fix_encoding(participant.get_name()),
+            'Vision Score': participant.get_vision_score(),
+            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
         })
     
     df = pd.DataFrame(data)
@@ -209,16 +228,14 @@ def create_damage_per_gold_chart(participants):
     
     data = []
     for participant in participants:
-        gold = max(participant.get('goldEarned', 1), 1)  # Avoid division by zero
-        damage = participant.get('totalDamageDealtToChampions', 0)
-        efficiency = damage / gold
+        efficiency = participant.get_damage_per_gold()
         
         data.append({
-            'Player': fix_encoding(participant.get('summonerName', 'Unknown')),
+            'Player': fix_encoding(participant.get_name()),
             'Damage per Gold': efficiency,
-            'Total Damage': damage,
-            'Gold Earned': gold,
-            'Team': "Team 1" if participant.get('teamId') == 100 else "Team 2"
+            'Total Damage': participant.get_total_damage(),
+            'Gold Spent': participant.get_gold_spent(),
+            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
         })
     
     df = pd.DataFrame(data)
@@ -230,7 +247,7 @@ def create_damage_per_gold_chart(participants):
         color='Team',
         title='Damage per Gold Efficiency',
         color_discrete_map={'Team 1': '#3498db', 'Team 2': '#e74c3c'},
-        hover_data=['Total Damage', 'Gold Earned']
+        hover_data=['Total Damage', 'Gold Spent']
     )
     
     fig.update_xaxis(tickangle=45)
@@ -238,7 +255,7 @@ def create_damage_per_gold_chart(participants):
     
     return fig
 
-def single_game_page():
+def main():
     """Main single game analysis page"""
     st.title("📊 Single Game Analysis")
     st.write("Analyze individual game performance and statistics")
@@ -274,15 +291,13 @@ def single_game_page():
         # Game information section
         st.header("🎮 Game Information")
         display_game_info(game_data)
-        
-        # Participants table
+          # Participants table
         st.header("👥 Participants")
-        display_participants_table(participants)
-        
-        # Team damage overview
+        display_participants_table(participants, game_data)
+          # Team damage overview
         st.header("⚔️ Team Damage Summary")
-        team1_damage = sum(p.get('totalDamageDealtToChampions', 0) for p in participants if p.get('teamId') == 100)
-        team2_damage = sum(p.get('totalDamageDealtToChampions', 0) for p in participants if p.get('teamId') == 200)
+        team1_damage = sum(p.get_total_damage() for p in participants if p.get_team() == "100")
+        team2_damage = sum(p.get_total_damage() for p in participants if p.get_team() == "200")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -332,3 +347,10 @@ def single_game_page():
     except Exception as e:
         st.error(f"❌ Error loading game data: {str(e)}")
         st.info("Please check that the selected file exists and is a valid JSON game file.")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
+else:
+    # When imported as a page, run directly
+    main()
