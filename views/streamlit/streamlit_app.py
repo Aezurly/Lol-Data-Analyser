@@ -14,9 +14,10 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-# Import model for player search
 from models.multi_game_analyzer import MultiGameAnalyzer
 from utils.utils import fix_encoding
+
+from views.streamlit.components import display_player_search_results, display_game_cards_grid
 
 # Configure Streamlit page
 st.set_page_config(**STREAMLIT_CONFIG)
@@ -43,33 +44,32 @@ def display_player_search():
             # Load analyzer
             analyzer = load_multi_game_analyzer()
             
-            # Search for players
-            matching_players = analyzer.search_players(search_term)
-            
-            if matching_players:
-                st.caption(f"Found {len(matching_players)} matching player(s)")
-                # Create cards in columns (3 per row)
-                cols_per_row = 3
-                for i in range(0, len(matching_players), cols_per_row):
-                    cols = st.columns(cols_per_row)
-                    
-                    for j, player_name in enumerate(matching_players[i:i+cols_per_row]):
-                        with cols[j]:
-                            # Get basic player info
-                            player_stats = analyzer.player_stats.get(player_name)
-                            if player_stats:
-                                with st.container(border=True):
-                                    st.markdown(f"**{fix_encoding(player_name)}** • {player_stats.get_most_played_position()}")
-                                    st.caption(f"{player_stats.games_played} games •  {player_stats.get_win_rate()*100:.1f}%")
-                                    
-                                    if st.button("View Profile", key=f"profile_{player_name}", use_container_width=True):
-                                        st.session_state.selected_player = player_name
-                                        st.switch_page("pages/4_👤_Player_Profile.py")
-            else:
-                st.warning(f"No players found matching '{search_term}'")
+            display_player_search_results(search_term, analyzer)
                 
         except Exception as e:
             st.error(f"Error searching players: {str(e)}")
+
+def display_games():
+    """Display recent games section on home page"""
+    st.subheader("📅 Recent Games")
+    
+    try:
+        # Load analyzer
+        analyzer = load_multi_game_analyzer()
+        
+        # Get all games data
+        games_data = analyzer.get_all_games_data()
+        
+        if not games_data:
+            st.warning("No games found in the data directory")
+            return
+        
+        st.caption(f"Found {len(games_data)} game(s)")
+
+        display_game_cards_grid(games_data, analyzer, cols_per_row=2)
+                        
+    except Exception as e:
+        st.error(f"Error loading games: {str(e)}")
 
 def main():
     """Main Streamlit application - Home page"""
@@ -84,22 +84,11 @@ def main():
     # Player search section
     display_player_search()
     
-    # Main content
-    st.header("📊 Application Status")
+    # Divider
+    st.markdown("---")
     
-    # Test data directory
-    if os.path.exists(DATA_DIRECTORY):
-        json_files = [f for f in os.listdir(DATA_DIRECTORY) if f.endswith('.json')]
-        st.success(f"✅ Data directory found: {len(json_files)} JSON files detected")
-        
-        if json_files:
-            st.write("**Available game files:**")
-            for file in json_files[:5]:  # Show first 5 files
-                st.write(f"- {file}")
-            if len(json_files) > 5:
-                st.write(f"... and {len(json_files) - 5} more files")
-    else:
-        st.error(f"❌ Data directory not found: {DATA_DIRECTORY}")
+    # Recent games section
+    display_games()
     
     # Navigation guide
     st.header("🧭 Infos")

@@ -443,3 +443,90 @@ class MultiGameAnalyzer:
         position = player_stats.get_most_played_position()
         position_players = self.get_players_by_position(position)
         return len(position_players) >= min_players
+
+    def get_all_games_data(self) -> list:
+        """Get all game files data sorted by date (most recent first)"""
+        if not os.path.exists(self.data_directory):
+            return []
+        
+        json_files = [f for f in os.listdir(self.data_directory) if f.endswith('.json')]
+        games_data = []
+        
+        for filename in json_files:
+            file_path = os.path.join(self.data_directory, filename)
+            try:
+                game = GameData(file_path)
+                if game.data:
+                    # Use existing GameData methods
+                    game_info = {
+                        'filename': filename,
+                        'file_path': file_path,
+                        'game_duration': game.get_game_duration(),
+                        'game_duration_formatted': game.get_game_duration_formatted(),
+                        'participants_count': len(game.get_all_participants()),
+                        'date_string': game.get_date_string(),
+                        'version': game.get_version()
+                    }
+                    
+                    # Get teams info using existing methods
+                    participants = game.get_all_participants()
+                    team1_players = []
+                    team2_players = []
+                    
+                    for participant in participants:
+                        player_info = {
+                            'name': fix_encoding(participant.get_name()),
+                            'champion': participant.get_champion(),
+                            'position': participant.get_position(),
+                            'win': participant.get_win(),
+                            'team': participant.get_team()
+                        }
+                        
+                        if participant.get_team() == "100":  # Team 1
+                            team1_players.append(player_info)
+                        else:  # Team 2
+                            team2_players.append(player_info)
+                    
+                    game_info['team1'] = team1_players
+                    game_info['team2'] = team2_players
+                    game_info['team1_win'] = team1_players[0]['win'] if team1_players else False
+                    
+                    # Use existing GameData methods for team stats
+                    game_info['team1_kills'] = game.get_team_kills("100")
+                    game_info['team2_kills'] = game.get_team_kills("200")
+                    game_info['team1_damage'] = game.get_team_damage("100")
+                    game_info['team2_damage'] = game.get_team_damage("200")
+                    
+                    games_data.append(game_info)
+                    
+            except Exception as e:
+                print(f"Error processing {filename}: {e}")
+                continue
+        
+        # Sort by filename (assuming date format in filename) - most recent first
+        games_data.sort(key=lambda x: x['filename'], reverse=True)
+        return games_data
+
+    def get_game_summary_for_display(self, game_info: dict) -> dict:
+        """Format game information for display using existing data"""
+        # Get winning team info
+        winning_team = 1 if game_info['team1_win'] else 2
+        losing_team = 2 if game_info['team1_win'] else 1
+        
+        return {
+            'filename': game_info['filename'],
+            'duration': game_info['game_duration_formatted'],
+            'participants': game_info['participants_count'],
+            'winning_team': winning_team,
+            'losing_team': losing_team,
+            'team1_players': [p['name'] for p in game_info['team1']],
+            'team2_players': [p['name'] for p in game_info['team2']],
+            'team1_champions': [p['champion'] for p in game_info['team1']],
+            'team2_champions': [p['champion'] for p in game_info['team2']],
+            'team1_players_with_champions': [f"{p['champion']} ({p['name']})" for p in game_info['team1']],
+            'team2_players_with_champions': [f"{p['champion']} ({p['name']})" for p in game_info['team2']],
+            'team1_kills': game_info.get('team1_kills', 0),
+            'team2_kills': game_info.get('team2_kills', 0),
+            'date_string': game_info['date_string'],
+            'file_path': game_info['file_path']
+        }

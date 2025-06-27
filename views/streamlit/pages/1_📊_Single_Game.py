@@ -260,6 +260,9 @@ def main():
     st.title("📊 Single Game Analysis")
     st.write("Analyze individual game performance and statistics")
     
+    # Check if a game was selected from home page
+    selected_game_path = st.session_state.get('selected_game', None)
+    
     # Game file selection
     available_games = get_available_games()
     
@@ -267,11 +270,27 @@ def main():
         st.error("❌ No game files found in the data directory")
         return
     
+    # If a game was selected from home page, find its filename
+    if selected_game_path:
+        selected_filename = os.path.basename(selected_game_path)
+        if selected_filename in available_games:
+            default_index = available_games.index(selected_filename)
+        else:
+            default_index = 0
+            st.warning(f"Selected game {selected_filename} not found, using first available game")
+    else:
+        default_index = 0
+    
     selected_game = st.selectbox(
         "Select a game to analyze:",
         available_games,
+        index=default_index,
         help="Choose a JSON game file from the data directory"
     )
+    
+    # Clear the selected game from session state after using it
+    if 'selected_game' in st.session_state:
+        del st.session_state.selected_game
     
     if not selected_game:
         st.warning("Please select a game file to continue")
