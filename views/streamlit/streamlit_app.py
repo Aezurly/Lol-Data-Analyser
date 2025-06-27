@@ -1,7 +1,7 @@
 # VIEW: Main Streamlit application entry point
 """
 Streamlit web interface for LoL Data Analyzer
-Home page using Streamlit's native page navigation
+Main Streamlit application - Home page
 """
 
 import streamlit as st
@@ -14,16 +14,75 @@ project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 if project_root not in sys.path:
     sys.path.append(project_root)
 
+# Import model for player search
+from models.multi_game_analyzer import MultiGameAnalyzer
+from utils.utils import fix_encoding
+
 # Configure Streamlit page
 st.set_page_config(**STREAMLIT_CONFIG)
+
+def load_multi_game_analyzer():
+    """Load and cache the multi-game analyzer"""
+    if 'multi_game_analyzer' not in st.session_state:
+        with st.spinner("Loading and analyzing all games..."):
+            analyzer = MultiGameAnalyzer("data")
+            analyzer.load_all_games()
+            st.session_state.multi_game_analyzer = analyzer
+    
+    return st.session_state.multi_game_analyzer
+
+def display_player_search():
+    """Display player search functionality on home page"""
+    st.subheader("🔍 Player Search")
+    
+    # Search input
+    search_term = st.text_input("Search for a player:", placeholder="Enter player name...")
+    
+    if search_term:
+        try:
+            # Load analyzer
+            analyzer = load_multi_game_analyzer()
+            
+            # Search for players
+            matching_players = analyzer.search_players(search_term)
+            
+            if matching_players:
+                st.caption(f"Found {len(matching_players)} matching player(s)")
+                # Create cards in columns (3 per row)
+                cols_per_row = 3
+                for i in range(0, len(matching_players), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    
+                    for j, player_name in enumerate(matching_players[i:i+cols_per_row]):
+                        with cols[j]:
+                            # Get basic player info
+                            player_stats = analyzer.player_stats.get(player_name)
+                            if player_stats:
+                                with st.container(border=True):
+                                    st.markdown(f"**{fix_encoding(player_name)}** • {player_stats.get_most_played_position()}")
+                                    st.caption(f"{player_stats.games_played} games •  {player_stats.get_win_rate()*100:.1f}%")
+                                    
+                                    if st.button("View Profile", key=f"profile_{player_name}", use_container_width=True):
+                                        st.session_state.selected_player = player_name
+                                        st.switch_page("pages/4_👤_Player_Profile.py")
+            else:
+                st.warning(f"No players found matching '{search_term}'")
+                
+        except Exception as e:
+            st.error(f"Error searching players: {str(e)}")
 
 def main():
     """Main Streamlit application - Home page"""
     
     # Header
-    st.title("� LoL Data Analyzer")
-    st.subheader(f"Version {APP_VERSION}")
-    st.write(APP_DESCRIPTION)
+    st.title("⚔️ LoL Data Analyzer")
+    st.write(f"{APP_DESCRIPTION} \t • \t Version **{APP_VERSION}**")
+
+    # Divider
+    st.markdown("---")
+    
+    # Player search section
+    display_player_search()
     
     # Main content
     st.header("📊 Application Status")
@@ -43,12 +102,13 @@ def main():
         st.error(f"❌ Data directory not found: {DATA_DIRECTORY}")
     
     # Navigation guide
-    st.header("🧭 Navigation")
+    st.header("🧭 Infos")
     st.info("""
     Use the sidebar navigation to access different sections:
     - **📊 Single Game Analysis**: Analyze individual game data
-    - **🌌 Global Stats**: Compare multiple games
+    - **🌌 Global Stats**: Compare multiple games and player rankings
     - **🦦 Marmotte Flip**: Team performance analysis
+    - **👤 Player Profile**: Detailed player statistics (accessible via search)
     """)
     
     # Application metrics
@@ -74,14 +134,6 @@ def main():
             value=st.__version__,
             delta="Installed"
         )
-    
-    # Interactive test
-    st.header("🎛️ Interactive Test")
-    
-    name = st.text_input("Enter your summoner name:", placeholder="e.g. Aezurly")
-    
-    if name:
-        st.success(f"Hello {name}! The Streamlit interface is working correctly! 🎉")
     
     # Footer
     st.markdown("---")

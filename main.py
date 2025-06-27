@@ -19,7 +19,9 @@ def main():
         subprocess.run([
             sys.executable, "-m", "streamlit", "run", 
             "views/streamlit/streamlit_app.py",
-            "--server.port=8501"
+            "--server.port=8501",
+            "--server.runOnSave=true",
+            "--server.fileWatcherType=auto"
         ])
     else:
         # Launch terminal application

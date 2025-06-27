@@ -36,11 +36,18 @@ class PlayerStats:
         self.total_game_duration = 0
         self.champions_played = defaultdict(int)
         self.positions_played = defaultdict(int)
+        # Champion-specific stats for detailed analysis
+        self.champion_stats = defaultdict(lambda: {
+            'games': 0, 'wins': 0, 'kills': 0, 'deaths': 0, 'assists': 0
+        })
     
     def add_game_stats(self, participant: ParticipantData, game_duration: int):
         """Add stats from a single game"""
         self.games_played += 1
-        if participant.get_win():
+        champion = participant.get_champion()
+        is_win = participant.get_win()
+        
+        if is_win:
             self.total_wins += 1
         self.total_damage += participant.get_total_damage()
         self.total_kills += participant.get_kills()
@@ -50,8 +57,16 @@ class PlayerStats:
         self.total_vision_score += participant.get_vision_score()
         self.total_gold_spent += participant.get_gold_spent()
         self.total_game_duration += game_duration
-        self.champions_played[participant.get_champion()] += 1
+        self.champions_played[champion] += 1
         self.positions_played[participant.get_position()] += 1
+        
+        # Track champion-specific stats
+        self.champion_stats[champion]['games'] += 1
+        if is_win:
+            self.champion_stats[champion]['wins'] += 1
+        self.champion_stats[champion]['kills'] += participant.get_kills()
+        self.champion_stats[champion]['deaths'] += participant.get_deaths()
+        self.champion_stats[champion]['assists'] += participant.get_assists()
     
     def get_average_damage(self) -> float:
         """Get average damage per game"""
@@ -103,9 +118,30 @@ class PlayerStats:
     def get_win_rate(self) -> float:
         """Get win rate based on games played"""
         return (self.total_wins / self.games_played) if self.games_played > 0 else 0.0
+    
+    def get_champion_win_rate(self, champion: str) -> float:
+        """Get win rate for a specific champion"""
+        if champion in self.champion_stats:
+            stats = self.champion_stats[champion]
+            return (stats['wins'] / stats['games']) if stats['games'] > 0 else 0.0
+        return 0.0
+    
+    def get_champion_kda(self, champion: str) -> float:
+        """Get KDA for a specific champion"""
+        if champion in self.champion_stats:
+            stats = self.champion_stats[champion]
+            deaths = stats['deaths']
+            return (stats['kills'] + stats['assists']) / deaths if deaths > 0 else (stats['kills'] + stats['assists'])
+        return 0.0
 
 class MultiGameAnalyzer:
     """Class to analyze multiple games and calculate player averages"""
+    
+    # Constants for column names to avoid duplication
+    WIN_RATE_COL = 'Win Rate'
+    CS_MIN_COL = 'CS/min'
+    VISION_MIN_COL = 'Vision/min'
+    DMG_MIN_COL = 'Dmg/min'
     
     def __init__(self, data_directory: str = "data"):
         self.data_directory = data_directory
@@ -186,3 +222,224 @@ class MultiGameAnalyzer:
                 strip_accents(name).lower() == strip_accents(fixed_name).lower()):
                 return name
         return None
+
+    def get_players_by_position(self, position: str) -> List[PlayerStats]:
+        """Get all players who play a specific position"""
+        return [
+            stats for stats in self.player_stats.values()
+            if stats.games_played > 0 and stats.get_most_played_position() == position
+        ]
+    
+    def get_active_players(self) -> List[tuple]:
+        """Get all players with at least one game played"""
+        return [
+            (name, stats) for name, stats in self.player_stats.items()
+            if stats.games_played > 0
+        ]
+    
+    def search_players(self, search_term: str) -> List[str]:
+        """Search for players by name (case-insensitive partial match)"""
+        search_term = search_term.lower()
+        return [
+            player_name for player_name in self.player_stats.keys()
+            if search_term in player_name.lower()
+        ]
+    
+    def get_position_averages(self, position: str) -> dict:
+        """Calculate average statistics for all players in a position"""
+        position_players = self.get_players_by_position(position)
+        
+        if not position_players:
+            return {}
+        
+        total_players = len(position_players)
+        return {
+            'winrate': sum(s.get_win_rate() for s in position_players) / total_players,
+            'kda': sum(s.get_average_kda() for s in position_players) / total_players,
+            'dmg_min': sum(s.get_average_damage_per_minute() for s in position_players) / total_players,
+            'cs_min': sum(s.get_average_cs_per_minute() for s in position_players) / total_players,
+            'vision_min': sum(s.get_average_vision_score_per_minute() for s in position_players) / total_players
+        }
+    
+    def get_player_position_rank(self, player_name: str, metric: str) -> tuple:
+        """Get player's rank in their position for a specific metric"""
+        player_stats = self.player_stats.get(player_name)
+        if not player_stats:
+            return (0, 0)
+        
+        position = player_stats.get_most_played_position()
+        position_players = self.get_players_by_position(position)
+        
+        if len(position_players) < 2:
+            return (1, 1)
+        
+        # Get metric values and sort
+        metric_getter = {
+            'winrate': lambda s: s.get_win_rate(),
+            'kda': lambda s: s.get_average_kda(),
+            'dmg_min': lambda s: s.get_average_damage_per_minute(),
+            'cs_min': lambda s: s.get_average_cs_per_minute(),
+            'vision_min': lambda s: s.get_average_vision_score_per_minute()
+        }
+        
+        if metric not in metric_getter:
+            return (0, 0)
+        
+        sorted_values = sorted(
+            [metric_getter[metric](s) for s in position_players], 
+            reverse=True
+        )
+        
+        player_value = metric_getter[metric](player_stats)
+        rank = sorted_values.index(player_value) + 1
+        
+        return (rank, len(position_players))
+    
+    def get_all_champions_played(self) -> dict:
+        """Get all champions played by any player with their players list"""
+        all_champions = {}
+        
+        for player_name, stats in self.player_stats.items():
+            if stats.games_played > 0:
+                most_played = stats.get_most_played_champion()
+                if most_played != "Unknown":
+                    if most_played not in all_champions:
+                        all_champions[most_played] = []
+                    all_champions[most_played].append({
+                        'player': fix_encoding(player_name),
+                        'games': stats.champions_played[most_played]
+                    })
+        
+        return all_champions
+
+    def get_champion_analytics(self) -> dict:
+        """Get detailed champion analytics with formatted player information"""
+        all_champions = {}
+        
+        for player_name, stats in self.player_stats.items():
+            if stats.games_played > 0:
+                most_played = stats.get_most_played_champion()
+                if most_played != "Unknown":
+                    if most_played not in all_champions:
+                        all_champions[most_played] = []
+                    
+                    player_info = f"{fix_encoding(player_name)} ({stats.champions_played[most_played]} games)"
+                    all_champions[most_played].append(player_info)
+        
+        return all_champions
+
+    def create_player_rankings_data(self) -> list:
+        """Create formatted player rankings data for display"""
+        active_players = self.get_active_players()
+        
+        player_stats = []
+        for player_name, stats_obj in active_players:
+            player_stats.append({
+                'Player': fix_encoding(player_name),
+                'Position': stats_obj.get_most_played_position(),
+                'Most Played': stats_obj.get_most_played_champion(),
+                'Games': stats_obj.games_played,
+                self.WIN_RATE_COL: round(stats_obj.get_win_rate(), 1),
+                'Avg KDA': round(stats_obj.get_average_kda(), 2),
+                self.CS_MIN_COL: round(stats_obj.get_average_cs_per_minute(), 1),
+                self.DMG_MIN_COL: round(stats_obj.get_average_damage_per_minute(), 1),
+                'DMG/Gold': round(stats_obj.get_average_damage_per_gold(), 2),
+                self.VISION_MIN_COL: round(stats_obj.get_average_vision_score_per_minute(), 2),
+                'Kills/Games': round(stats_obj.total_kills / stats_obj.games_played, 2) if stats_obj.games_played > 0 else 0,
+                'Deaths/Games': round(stats_obj.total_deaths / stats_obj.games_played, 2) if stats_obj.games_played > 0 else 0,
+            })
+        
+        return player_stats
+
+    def get_player_champions_data(self, player_name: str) -> list:
+        """Get formatted champions data for a specific player"""
+        stats = self.player_stats.get(player_name)
+        if not stats or not stats.champions_played:
+            return []
+        
+        return [
+            {
+                'Champion': champion,
+                'Games': count,
+                self.WIN_RATE_COL: f"{stats.get_champion_win_rate(champion)*100:.1f}%",
+                'KDA': f"{stats.get_champion_kda(champion):.2f}"
+            }
+            for champion, count in stats.champions_played.items()
+        ]
+
+    def get_player_summary_metrics(self, player_name: str) -> dict:
+        """Get formatted summary metrics for a player"""
+        stats = self.player_stats.get(player_name)
+        if not stats:
+            return {}
+        
+        return {
+            'games_played': stats.games_played,
+            'position': stats.get_most_played_position(),
+            'most_played_champion': stats.get_most_played_champion(),
+            'avg_kda': round(stats.get_average_kda(), 2)
+        }
+
+    def get_player_detailed_metrics(self, player_name: str) -> dict:
+        """Get formatted detailed metrics for a player"""
+        stats = self.player_stats.get(player_name)
+        if not stats:
+            return {}
+        
+        return {
+            'dmg_per_min': round(stats.get_average_damage_per_minute(), 1),
+            'cs_per_min': round(stats.get_average_cs_per_minute(), 1),
+            'vision_per_min': round(stats.get_average_vision_score_per_minute(), 2),
+            'dmg_per_gold': round(stats.get_average_damage_per_gold(), 2),
+            'total_kills': stats.total_kills,
+            'total_deaths': stats.total_deaths
+        }
+
+    def create_position_comparison_data(self, player_name: str) -> list:
+        """Create position comparison data for a player"""
+        from utils.predicates import MetricFormatter
+        
+        player_stats = self.player_stats.get(player_name)
+        if not player_stats:
+            return []
+        
+        formatter = MetricFormatter()
+        position = player_stats.get_most_played_position()
+        averages = self.get_position_averages(position)
+        
+        if not averages:
+            return []
+        
+        metrics = [
+            (self.WIN_RATE_COL, 'winrate', lambda s: s.get_win_rate(), formatter.format_percentage),
+            ('KDA', 'kda', lambda s: s.get_average_kda(), formatter.format_decimal),
+            ('Damage/min', 'dmg_min', lambda s: s.get_average_damage_per_minute(), lambda x: formatter.format_decimal(x, 1)),
+            (self.CS_MIN_COL, 'cs_min', lambda s: s.get_average_cs_per_minute(), lambda x: formatter.format_decimal(x, 1)),
+            (self.VISION_MIN_COL, 'vision_min', lambda s: s.get_average_vision_score_per_minute(), formatter.format_decimal)
+        ]
+        
+        comparison_data = []
+        for metric_name, metric_key, value_getter, formatter_func in metrics:
+            player_value = value_getter(player_stats)
+            avg_value = averages[metric_key]
+            rank, total = self.get_player_position_rank(player_stats.name, metric_key)
+            
+            comparison_data.append({
+                'Metric': metric_name,
+                'Player Value': formatter_func(player_value),
+                'Position Average': formatter_func(avg_value),
+                'Rank': formatter.format_rank(rank, total),
+                'Difference': formatter.format_difference_emoji(player_value, avg_value)
+            })
+        
+        return comparison_data
+
+    def has_sufficient_players_for_comparison(self, player_name: str, min_players: int = 2) -> bool:
+        """Check if there are enough players in the position for comparison"""
+        player_stats = self.player_stats.get(player_name)
+        if not player_stats:
+            return False
+        
+        position = player_stats.get_most_played_position()
+        position_players = self.get_players_by_position(position)
+        return len(position_players) >= min_players
