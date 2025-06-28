@@ -13,6 +13,7 @@ import numpy as np
 
 # Import models and utilities
 from models.team_analyzer import TeamAnalyzer
+from constants import UNKNOWN_VALUE
 from models.position_comparison import PositionComparison
 from views.shared.team_visualizer import TeamVisualizer
 from utils.utils import fix_encoding
@@ -141,7 +142,7 @@ def display_individual_player_stats(analyzer, player_name, position):
     with col3:
         st.metric("Avg KDA", f"{player_stats.get('kda', 0):.2f}")
         st.metric("Vision Score", f"{player_stats.get('vision_score', 0):.1f}")
-        st.metric("Most Played Champion", player_stats.get('champion', 'Unknown'))
+        st.metric("Most Played Champion", player_stats.get('champion', UNKNOWN_VALUE))
 
 def display_position_comparison(analyzer, position_comparison):
     """Display position comparison analysis"""
@@ -271,35 +272,6 @@ def create_position_radar_chart(metrics, our_values, opponent_values, position):
     
     st.plotly_chart(fig, use_container_width=True)
 
-def display_team_vs_opponents_radar(team_visualizer):
-    """Display team vs opponents radar chart"""
-    st.subheader("🕸️ Team vs Opponents Radar Chart")
-    
-    try:
-        # This would need to be implemented in the team_visualizer
-        # For now, show a placeholder
-        st.info("Radar chart functionality will be implemented with the team visualizer")
-        
-        # Create a sample radar chart structure
-        metrics = ['Kills', 'Deaths', 'Assists', 'Damage', 'Gold', 'Vision']
-        
-        st.write("**Radar Chart Options:**")
-        chart_type = st.selectbox(
-            "Select chart type:",
-            ["Overall Team Performance", "By Position", "By Game"]
-        )
-        
-        if chart_type == "Overall Team Performance":
-            st.info("Overall team performance radar chart would be displayed here")
-        elif chart_type == "By Position":
-            position = st.selectbox("Select position:", POSITIONS)
-            st.info(f"Position-specific radar chart for {position} would be displayed here")
-        elif chart_type == "By Game":
-            st.info("Game-by-game radar chart would be displayed here")
-            
-    except Exception as e:
-        st.error(f"Error creating radar chart: {str(e)}")
-
 def main():
     """Main team analysis page"""
     st.title("🦦 Team Analysis")
@@ -310,11 +282,10 @@ def main():
         analyzer, position_comparison, team_visualizer = load_team_analyzer()
         
         # Main sections
-        tab1, tab2, tab3, tab4 = st.tabs([
+        tab1, tab2, tab3 = st.tabs([
             "🏆 Team Overview", 
             "👤 Player Analysis", 
             "⚖️ Position Comparison", 
-            "🕸️ Radar Charts"
         ])
         
         with tab1:
@@ -325,9 +296,6 @@ def main():
         
         with tab3:
             display_position_comparison(analyzer, position_comparison)
-        
-        with tab4:
-            display_team_vs_opponents_radar(team_visualizer)
             
     except Exception as e:
         st.error(f"❌ Error in team analysis: {str(e)}")

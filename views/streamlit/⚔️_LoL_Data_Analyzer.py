@@ -16,6 +16,7 @@ if project_root not in sys.path:
 
 from models.multi_game_analyzer import MultiGameAnalyzer
 from utils.utils import fix_encoding
+from constants import DATA_DIR
 
 from views.streamlit.components import display_player_search_results, display_game_cards_grid
 
@@ -26,7 +27,7 @@ def load_multi_game_analyzer():
     """Load and cache the multi-game analyzer"""
     if 'multi_game_analyzer' not in st.session_state:
         with st.spinner("Loading and analyzing all games..."):
-            analyzer = MultiGameAnalyzer("data")
+            analyzer = MultiGameAnalyzer(DATA_DIR)
             analyzer.load_all_games()
             st.session_state.multi_game_analyzer = analyzer
     

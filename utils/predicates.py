@@ -2,6 +2,7 @@
 """
 Predicates and utility functions to centralize business logic
 """
+from constants import UNKNOWN_VALUE
 
 from typing import Any, Callable
 
@@ -27,7 +28,7 @@ def name_contains(search_term: str) -> Callable:
 def champion_is_known() -> Callable:
     """Predicate to check if champion is not 'Unknown'"""
     def predicate(champion_name: str) -> bool:
-        return champion_name != "Unknown"
+        return champion_name != UNKNOWN_VALUE
     return predicate
 
 def has_sufficient_position_players(min_players: int = 2) -> Callable:

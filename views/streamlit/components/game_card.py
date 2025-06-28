@@ -6,6 +6,7 @@ Reusable game card component for displaying game information
 import streamlit as st
 import pandas as pd
 from utils.utils import fix_encoding
+from constants import TEAM_1_SIMPLE, TEAM_2_SIMPLE, TEAM_1_EMOJI, TEAM_2_EMOJI, WIN_EMOJI, PAGES
 
 
 def display_game_card(game_summary: dict, analyzer=None):
@@ -37,8 +38,8 @@ def display_game_card(game_summary: dict, analyzer=None):
         
         # Create DataFrame
         team_data = pd.DataFrame({
-            f"🔵 Blue {'🏆' if game_summary['winning_team'] == 1 else ''}": team1_display,
-            f"🔴 Red {'🏆' if game_summary['winning_team'] == 2 else ''}": team2_display
+            f"{TEAM_1_EMOJI} {TEAM_1_SIMPLE} {WIN_EMOJI if game_summary['winning_team'] == 1 else ''}": team1_display,
+            f"{TEAM_2_EMOJI} {TEAM_2_SIMPLE} {WIN_EMOJI if game_summary['winning_team'] == 2 else ''}": team2_display
         })
         
         st.dataframe(team_data, hide_index=True, use_container_width=True)
@@ -47,7 +48,7 @@ def display_game_card(game_summary: dict, analyzer=None):
         if analyzer:
             if st.button("See More", key=f"game_{game_summary['filename']}", use_container_width=True):
                 st.session_state.selected_game = game_summary['file_path']
-                st.switch_page("pages/1_📊_Single_Game.py")
+                st.switch_page(PAGES['SINGLE_GAME'])
                 analyze_clicked = True
     
     return analyze_clicked

@@ -5,25 +5,15 @@ from typing import Dict, List, Optional
 from collections import defaultdict
 from models.game_data import GameData
 from models.participant_data import ParticipantData
+from constants import DATA_DIR, TEAM_1_ID, TEAM_2_ID, UNKNOWN_VALUE
+from utils.utils import fix_encoding, normalize_player_name
 import unicodedata
-
-def fix_encoding(text):
-    """Fix encoding issues in text (convert from Latin-1 to UTF-8)"""
-    if not isinstance(text, str):
-        return text
-    try:
-        return text.encode('latin-1').decode('utf-8')
-    except (UnicodeDecodeError, UnicodeEncodeError):
-        try:
-            return text.encode('windows-1252').decode('utf-8')
-        except (UnicodeDecodeError, UnicodeEncodeError):
-            return text
 
 class PlayerStats:
     """Class to accumulate and calculate average stats for a player"""
     
     def __init__(self, name: str):
-        self.name = fix_encoding(name)  # Fix encoding for player name
+        self.name = normalize_player_name(name)  # Normalize player name for consistent handling
         self.games_played = 0
         self.total_wins = 0
         self.total_damage = 0
@@ -100,7 +90,7 @@ class PlayerStats:
     
     def get_most_played_champion(self) -> str:
         """Get most played champion"""
-        return max(self.champions_played.items(), key=lambda x: x[1])[0] if self.champions_played else "Unknown"
+        return max(self.champions_played.items(), key=lambda x: x[1])[0] if self.champions_played else UNKNOWN_VALUE
     
     def get_most_played_position(self) -> str:
         """Get most played position"""
@@ -113,7 +103,7 @@ class PlayerStats:
             return "JGL"
         if position == "MIDDLE":
             return "MID"
-        return position if position else "Unknown"
+        return position if position else UNKNOWN_VALUE
     
     def get_win_rate(self) -> float:
         """Get win rate based on games played"""
@@ -143,7 +133,7 @@ class MultiGameAnalyzer:
     VISION_MIN_COL = 'Vision/min'
     DMG_MIN_COL = 'Dmg/min'
     
-    def __init__(self, data_directory: str = "data"):
+    def __init__(self, data_directory: str = DATA_DIR):
         self.data_directory = data_directory
         self.player_stats: Dict[str, PlayerStats] = {}
         self.games_analyzed = 0
@@ -173,7 +163,7 @@ class MultiGameAnalyzer:
         game_duration = game.get_game_duration()
         
         for participant in game.get_all_participants():
-            player_name = fix_encoding(participant.get_name())
+            player_name = normalize_player_name(participant.get_name())
             
             if player_name not in self.player_stats:
                 self.player_stats[player_name] = PlayerStats(player_name)
@@ -302,7 +292,7 @@ class MultiGameAnalyzer:
         for player_name, stats in self.player_stats.items():
             if stats.games_played > 0:
                 most_played = stats.get_most_played_champion()
-                if most_played != "Unknown":
+                if most_played != UNKNOWN_VALUE:
                     if most_played not in all_champions:
                         all_champions[most_played] = []
                     all_champions[most_played].append({
@@ -319,7 +309,7 @@ class MultiGameAnalyzer:
         for player_name, stats in self.player_stats.items():
             if stats.games_played > 0:
                 most_played = stats.get_most_played_champion()
-                if most_played != "Unknown":
+                if most_played != UNKNOWN_VALUE:
                     if most_played not in all_champions:
                         all_champions[most_played] = []
                     
@@ -475,14 +465,14 @@ class MultiGameAnalyzer:
                     
                     for participant in participants:
                         player_info = {
-                            'name': fix_encoding(participant.get_name()),
+                            'name': normalize_player_name(participant.get_name()),
                             'champion': participant.get_champion(),
                             'position': participant.get_position(),
                             'win': participant.get_win(),
                             'team': participant.get_team()
                         }
                         
-                        if participant.get_team() == "100":  # Team 1
+                        if participant.get_team() == TEAM_1_ID:  # Team 1
                             team1_players.append(player_info)
                         else:  # Team 2
                             team2_players.append(player_info)
@@ -492,9 +482,9 @@ class MultiGameAnalyzer:
                     game_info['team1_win'] = team1_players[0]['win'] if team1_players else False
                     
                     # Use existing GameData methods for team stats
-                    game_info['team1_kills'] = game.get_team_kills("100")
-                    game_info['team2_kills'] = game.get_team_kills("200")
-                    game_info['team1_damage'] = game.get_team_damage("100")
+                    game_info['team1_kills'] = game.get_team_kills(TEAM_1_ID)
+                    game_info['team2_kills'] = game.get_team_kills(TEAM_2_ID)
+                    game_info['team1_damage'] = game.get_team_damage(TEAM_1_ID)
                     game_info['team2_damage'] = game.get_team_damage("200")
                     
                     games_data.append(game_info)

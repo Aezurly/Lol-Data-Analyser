@@ -29,3 +29,16 @@ def fix_encoding(text):
             return text.encode('windows-1252').decode('utf-8')
         except (UnicodeDecodeError, UnicodeEncodeError):
             return text
+
+
+def normalize_player_name(name):
+    """Normalize player name for consistent storage and comparison"""
+    if not isinstance(name, str):
+        return name
+
+    fixed_name = fix_encoding(name)
+
+    import unicodedata
+    normalized_name = unicodedata.normalize('NFC', fixed_name)
+    
+    return normalized_name

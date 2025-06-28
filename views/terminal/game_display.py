@@ -1,6 +1,7 @@
 # VIEW: Handles console display of game information and participant data
 from rich.table import Table
 from utils.utils import fix_encoding
+from constants import TEAM_1_ID, TEAM_2_ID
 
 class GameDisplay:
     """Handles the display of game information and participant data"""
@@ -22,7 +23,7 @@ class GameDisplay:
         table.add_column("Damage", style="red", width=10)
 
         for participant in participants:
-            name_style = "blue" if participant.get_team() == "100" else "red"
+            name_style = "blue" if participant.get_team() == TEAM_1_ID else "red"
             fixed_name = fix_encoding(participant.get_name())
             table.add_row(
                 f"[{name_style}]{fixed_name}[/{name_style}]",
@@ -36,5 +37,5 @@ class GameDisplay:
     def display_team_damage(self, game):
         """Display total damage by team"""
         self.console.print("\n[bold]Total damage by team:[/bold]")
-        self.console.print(f"[bold blue]Blue Team:[/bold blue] {game.get_team_damage('100')}")
-        self.console.print(f"[bold red]Red Team:[/bold red] {game.get_team_damage('200')}")
+        self.console.print(f"[bold blue]Blue Team:[/bold blue] {game.get_team_damage(TEAM_1_ID)}")
+        self.console.print(f"[bold red]Red Team:[/bold red] {game.get_team_damage(TEAM_2_ID)}")

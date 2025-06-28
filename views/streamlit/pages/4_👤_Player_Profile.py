@@ -10,12 +10,13 @@ import plotly.graph_objects as go
 
 # Import models and utilities
 from models.multi_game_analyzer import MultiGameAnalyzer
-from utils.utils import fix_encoding
+from utils.utils import fix_encoding, normalize_player_name
 from utils.predicates import (
     DataFrameStyler,
     DisplayHelpers,
     ValidationHelpers
 )
+from constants import PAGES
 
 # Configure page
 st.set_page_config(
@@ -130,20 +131,31 @@ def main():
         st.title("👤 Player Profile")
         st.warning("No player selected. Please go back to the home page and search for a player.")
         if st.button("🏠 Go to Home Page"):
-            st.switch_page("streamlit_app.py")
+            st.switch_page(PAGES['HOME'])
         return
     
-    player_name = st.session_state.selected_player
+    # Normalize the player name from session state for consistent lookup
+    player_name = normalize_player_name(st.session_state.selected_player)
     
     try:
         # Load analyzer
         analyzer = load_multi_game_analyzer()
         
-        # Validate player exists
-        if not ValidationHelpers.validate_player_exists(analyzer, player_name):
+        player_exists = ValidationHelpers.validate_player_exists(analyzer, player_name)
+        if not player_exists:
+            original_name = st.session_state.selected_player
+            player_exists = ValidationHelpers.validate_player_exists(analyzer, original_name)
+            if player_exists:
+                player_name = original_name
+        
+        if not player_exists:
             st.error(f"Player '{player_name}' not found in the data")
+            st.info("Available players (sample):")
+            all_players = analyzer.get_all_players()
+            if all_players:
+                st.write(", ".join(all_players)) 
             if st.button("🏠 Go to Home Page"):
-                st.switch_page("streamlit_app.py")
+                st.switch_page(PAGES['HOME'])
             return
         
         # Get player stats
@@ -157,10 +169,10 @@ def main():
         col1, col2, col3 = st.columns([1, 1, 2])
         with col1:
             if st.button("🏠 Home"):
-                st.switch_page("streamlit_app.py")
+                st.switch_page(PAGES['HOME'])
         with col2:
             if st.button("🌌 Global Stats"):
-                st.switch_page("pages/2_🌌_Global_Stats.py")
+                st.switch_page(PAGES['GLOBAL_STATS'])
         
         # Summary metrics
         st.header("📊 Summary")
@@ -181,7 +193,7 @@ def main():
     except Exception as e:
         st.error(f"❌ Error loading player profile: {str(e)}")
         if st.button("🏠 Go to Home Page"):
-            st.switch_page("streamlit_app.py")
+            st.switch_page(PAGES['HOME'])
 
 # Run the main function directly when imported as a page
 main()

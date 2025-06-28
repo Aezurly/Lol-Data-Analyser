@@ -1,4 +1,6 @@
 # MODEL: Participant data representation and business logic for player statistics
+from constants import UNKNOWN_VALUE
+
 class ParticipantData:
     """Class to manage participant data."""
     def __init__(self, data: dict):
@@ -17,7 +19,7 @@ class ParticipantData:
 
     def get_name(self) -> str:
         """Returns player name."""
-        return self._get_field("RIOT_ID_GAME_NAME", "riotIdGameName") or "Unknown"
+        return self._get_field("RIOT_ID_GAME_NAME", "riotIdGameName") or UNKNOWN_VALUE
 
     def get_total_damage(self) -> int:
         """Returns total damage dealt to champions."""
@@ -25,11 +27,11 @@ class ParticipantData:
 
     def get_team(self) -> str:
         """Returns player's team."""
-        return self._get_field("TEAM", "team") or "Unknown"
+        return self._get_field("TEAM", "team") or UNKNOWN_VALUE
 
     def get_position(self) -> str:
         """Returns player's position."""
-        return self._get_field("INDIVIDUAL_POSITION", "individualPosition") or "Unknown"
+        return self._get_field("INDIVIDUAL_POSITION", "individualPosition") or UNKNOWN_VALUE
 
     def get_kills(self) -> int:
         """Returns number of kills."""
@@ -45,7 +47,7 @@ class ParticipantData:
     
     def get_champion(self) -> str:
         """Returns champion name."""
-        return self._get_field("SKIN", "skin") or "Unknown"
+        return self._get_field("SKIN", "skin") or UNKNOWN_VALUE
     
     def get_cs(self) -> int:
         """Returns total CS."""

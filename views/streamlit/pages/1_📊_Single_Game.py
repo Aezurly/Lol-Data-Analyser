@@ -14,7 +14,13 @@ import pandas as pd
 # Import models and utilities
 from models.game_data import GameData
 from views.shared.game_vizualizer import GameVisualizer
+from views.streamlit.components.player_card import display_participants_cards_grid
 from utils.utils import fix_encoding
+from constants import (
+    POSITION_ICON_URLS, DEFAULT_POSITION_ICON_URL, TEAM_COLORS, 
+    TEAM_1_NAME, TEAM_2_NAME, WIN_EMOJI, LOSE_EMOJI, TEAM_1_ID, TEAM_2_ID,
+    TEAM_1_LABEL, TEAM_2_LABEL
+)
 
 # Configure page
 st.set_page_config(
@@ -51,7 +57,7 @@ def display_game_info(game_data):
     
     # Team info - calculate from participants
     participants = game_data.get_all_participants()
-    team1_participants = [p for p in participants if p.get_team() == "100"]
+    team1_participants = [p for p in participants if p.get_team() == TEAM_1_ID]
     team2_participants = [p for p in participants if p.get_team() == "200"]
     
     if team1_participants and team2_participants:
@@ -59,74 +65,86 @@ def display_game_info(game_data):
         
         with col1:
             team1_wins = any(p.get_win() for p in team1_participants)
-            team1_result = "Victory" if team1_wins else "Defeat"
+            team1_result = WIN_EMOJI if team1_wins else LOSE_EMOJI
             team1_kills = sum(p.get_kills() for p in team1_participants)
-            st.subheader(f"🔵 Team 1 - {team1_result}")
-            st.write(f"**Total Kills:** {team1_kills}")
-            player_names = [fix_encoding(p.get_name()) for p in team1_participants]
-            st.write(f"**Players:** {', '.join(player_names)}")
-        
+            team1_deaths = sum(p.get_deaths() for p in team1_participants)
+            team1_assists = sum(p.get_assists() for p in team1_participants)
+            st.subheader(f"{TEAM_1_NAME} - {team1_result} - {team1_kills}/{team1_deaths}/{team1_assists}")
+
         with col2:
             team2_wins = any(p.get_win() for p in team2_participants)
-            team2_result = "Victory" if team2_wins else "Defeat"
+            team2_result = WIN_EMOJI if team2_wins else LOSE_EMOJI
             team2_kills = sum(p.get_kills() for p in team2_participants)
-            st.subheader(f"🔴 Team 2 - {team2_result}")
-            st.write(f"**Total Kills:** {team2_kills}")
-            player_names = [fix_encoding(p.get_name()) for p in team2_participants]
-            st.write(f"**Players:** {', '.join(player_names)}")
+            team2_deaths = sum(p.get_deaths() for p in team2_participants)
+            team2_assists = sum(p.get_assists() for p in team2_participants)
+            st.subheader(f"{TEAM_2_NAME} - {team2_result} - {team2_kills}/{team2_deaths}/{team2_assists}")
 
 def display_participants_table(participants, game_data):
     """Display participants in a table format"""
     if not participants:
         st.warning("No participants data available")
         return
-    
-    # Get game duration in minutes using the model method
+
     game_duration_seconds = game_data.get_game_duration()
-    game_duration_minutes = max(game_duration_seconds / 60, 1)  # Avoid division by zero
-    
+    game_duration_minutes = max(game_duration_seconds / 60, 1)
+
     # Convert participants to DataFrame
     participant_data = []
     for participant in participants:
         total_damage = participant.get_total_damage()
         damage_per_minute = round(total_damage / game_duration_minutes, 1)
+
+        # Get position and map to icon using constants
+        position = participant.get_position()
+        position_icon = POSITION_ICON_URLS.get(position, DEFAULT_POSITION_ICON_URL)
         
         participant_data.append({
+            'Position': position_icon,
             'Player': fix_encoding(participant.get_name()),
             'Champion': participant.get_champion(),
-            'Position': participant.get_position(),
             'Level': participant.get_level(),
-            '(K+A)/D': participant.get_kda(),
-            'KDA': f"{participant.get_kills()}/{participant.get_deaths()}/{participant.get_assists()}",
+            'KDA': f"{participant.get_kills()}/{participant.get_deaths()}/{participant.get_assists()} ({participant.get_kda():.1f})",
             'CS': participant.get_cs(),
             'Gold': participant.get_gold_spent(),
             'Dmg/min': damage_per_minute,
-            'Team': "🔵 Team 1" if participant.get_team() == "100" else "🔴 Team 2"
+            'Team': TEAM_1_NAME if participant.get_team() == TEAM_1_ID else TEAM_2_NAME
         })
     
     df = pd.DataFrame(participant_data)
     
+    column_config = {
+        "Position": st.column_config.ImageColumn(
+            "Role",
+            help="Player position/role",
+            width=16
+        ),
+        "Level": st.column_config.NumberColumn(
+            "Level",
+            help="Player level",
+            width=20
+        )
+    }
+    
     # Display table with styling
     st.subheader("📊 Players Overview")
     
-    # Team 1
     # Determine which teams won
-    team1_won = any(p.get_win() for p in participants if p.get_team() == "100")
-    team2_won = any(p.get_win() for p in participants if p.get_team() == "200")
+    team1_won = any(p.get_win() for p in participants if p.get_team() == TEAM_1_ID)
+    team2_won = any(p.get_win() for p in participants if p.get_team() == TEAM_2_ID)
     
     # Team 1
-    team1_df = df[df['Team'] == "🔵 Team 1"].drop('Team', axis=1)
+    team1_df = df[df['Team'] == TEAM_1_NAME].drop('Team', axis=1)
     if not team1_df.empty:
-        team1_status = "• Win 🏆" if team1_won else "• Defeat 💀"
-        st.write(f"**🔵 Team 1 {team1_status}**")
-        st.dataframe(team1_df, use_container_width=True, hide_index=True)
+        team1_status = f"• Win {WIN_EMOJI}" if team1_won else f"• Defeat {LOSE_EMOJI}"
+        st.write(f"**{TEAM_1_NAME} {team1_status}**")
+        st.dataframe(team1_df, use_container_width=True, hide_index=True, column_config=column_config)
     
     # Team 2  
-    team2_df = df[df['Team'] == "🔴 Team 2"].drop('Team', axis=1)
+    team2_df = df[df['Team'] == TEAM_2_NAME].drop('Team', axis=1)
     if not team2_df.empty:
-        team2_status = "• Win 🏆" if team2_won else "• Defeat 💀"
-        st.write(f"**🔴 Team 2 {team2_status}**")
-        st.dataframe(team2_df, use_container_width=True, hide_index=True)
+        team2_status = f"• Win {WIN_EMOJI}" if team2_won else f"• Defeat {LOSE_EMOJI}"
+        st.write(f"**{TEAM_2_NAME} {team2_status}**")
+        st.dataframe(team2_df, use_container_width=True, hide_index=True, column_config=column_config)
 
 def create_damage_chart(participants):
     """Create damage dealt chart"""
@@ -138,7 +156,7 @@ def create_damage_chart(participants):
         data.append({
             'Player': fix_encoding(participant.get_name()),
             'Damage': participant.get_total_damage(),
-            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
+            'Team': TEAM_1_LABEL if participant.get_team() == TEAM_1_ID else TEAM_2_LABEL
         })
     
     df = pd.DataFrame(data)
@@ -149,10 +167,10 @@ def create_damage_chart(participants):
         y='Damage', 
         color='Team',
         title='Total Damage Dealt to Champions',
-        color_discrete_map={'Team 1': '#3498db', 'Team 2': '#e74c3c'}
+        color_discrete_map=TEAM_COLORS
     )
     
-    fig.update_xaxis(tickangle=45)
+    fig.update_xaxes(tickangle=45)
     fig.update_layout(height=500)
     
     return fig
@@ -172,7 +190,7 @@ def create_kda_chart(participants):
             'Kills': participant.get_kills(),
             'Deaths': participant.get_deaths(),
             'Assists': participant.get_assists(),
-            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
+            'Team': TEAM_1_LABEL if participant.get_team() == TEAM_1_ID else TEAM_2_LABEL
         })
     
     df = pd.DataFrame(data)
@@ -183,11 +201,11 @@ def create_kda_chart(participants):
         y='KDA Ratio', 
         color='Team',
         title='KDA Ratio by Player',
-        color_discrete_map={'Team 1': '#3498db', 'Team 2': '#e74c3c'},
+        color_discrete_map=TEAM_COLORS,
         hover_data=['Kills', 'Deaths', 'Assists']
     )
     
-    fig.update_xaxis(tickangle=45)
+    fig.update_xaxes(tickangle=45)
     fig.update_layout(height=500)
     
     return fig
@@ -202,7 +220,7 @@ def create_vision_chart(participants):
         data.append({
             'Player': fix_encoding(participant.get_name()),
             'Vision Score': participant.get_vision_score(),
-            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
+            'Team': TEAM_1_LABEL if participant.get_team() == TEAM_1_ID else TEAM_2_LABEL
         })
     
     df = pd.DataFrame(data)
@@ -213,10 +231,10 @@ def create_vision_chart(participants):
         y='Vision Score', 
         color='Team',
         title='Vision Score by Player',
-        color_discrete_map={'Team 1': '#3498db', 'Team 2': '#e74c3c'}
+        color_discrete_map=TEAM_COLORS
     )
     
-    fig.update_xaxis(tickangle=45)
+    fig.update_xaxes(tickangle=45)
     fig.update_layout(height=500)
     
     return fig
@@ -235,7 +253,7 @@ def create_damage_per_gold_chart(participants):
             'Damage per Gold': efficiency,
             'Total Damage': participant.get_total_damage(),
             'Gold Spent': participant.get_gold_spent(),
-            'Team': "Team 1" if participant.get_team() == "100" else "Team 2"
+            'Team': TEAM_1_LABEL if participant.get_team() == TEAM_1_ID else TEAM_2_LABEL
         })
     
     df = pd.DataFrame(data)
@@ -246,14 +264,54 @@ def create_damage_per_gold_chart(participants):
         y='Damage per Gold', 
         color='Team',
         title='Damage per Gold Efficiency',
-        color_discrete_map={'Team 1': '#3498db', 'Team 2': '#e74c3c'},
+        color_discrete_map=TEAM_COLORS,
         hover_data=['Total Damage', 'Gold Spent']
     )
     
-    fig.update_xaxis(tickangle=45)
+    fig.update_xaxes(tickangle=45)
     fig.update_layout(height=500)
     
     return fig
+
+def create_cs_chart(participants):
+    """Create CS (Creep Score) chart"""
+    if not participants:
+        return None
+    
+    data = []
+    for participant in participants:
+        data.append({
+            'Player': fix_encoding(participant.get_name()),
+            'CS': participant.get_cs(),
+            'Team': TEAM_1_LABEL if participant.get_team() == TEAM_1_ID else TEAM_2_LABEL
+        })
+    
+    df = pd.DataFrame(data)
+    
+    fig = px.bar(
+        df, 
+        x='Player', 
+        y='CS', 
+        color='Team',
+        title='Creep Score (CS) by Player',
+        color_discrete_map=TEAM_COLORS
+    )
+    
+    fig.update_xaxes(tickangle=45)
+    fig.update_layout(height=500)
+    
+    return fig
+
+def display_participants_cards(participants):
+    """Display participant cards in a grid"""
+    if not participants:
+        st.warning("No participants data available")
+        return
+    
+    st.subheader("🃏 Profiles")
+    
+    # Display participants using the component
+    display_participants_cards_grid(participants, cols_per_row=5, show_profile_buttons=True)
 
 def main():
     """Main single game analysis page"""
@@ -308,56 +366,45 @@ def main():
         participants = game_data.get_all_participants()
         
         # Game information section
-        st.header("🎮 Game Information")
+        st.header("🎮 Game Overview")
         display_game_info(game_data)
           # Participants table
-        st.header("👥 Participants")
+        st.header("👥 Players")
+        display_participants_cards(participants)
         display_participants_table(participants, game_data)
-          # Team damage overview
-        st.header("⚔️ Team Damage Summary")
-        team1_damage = sum(p.get_total_damage() for p in participants if p.get_team() == "100")
-        team2_damage = sum(p.get_total_damage() for p in participants if p.get_team() == "200")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("🔵 Team 1 Total Damage", f"{team1_damage:,}")
-        with col2:
-            st.metric("🔴 Team 2 Total Damage", f"{team2_damage:,}")
         
         # Charts section
         st.header("📈 Performance Charts")
         
-        # Chart selection
-        chart_option = st.selectbox(
-            "Select a chart to display:",
-            [
-                "Total Damage Dealt",
-                "KDA Ratio", 
-                "Damage per Gold Efficiency",
-                "Vision Score"
-            ]
-        )
+        # Display charts in 2 columns
+        col1, col2 = st.columns(2)
         
-        # Display selected chart
-        if chart_option == "Total Damage Dealt":
-            fig = create_damage_chart(participants)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
+        with col1:
+            st.subheader("💥 Total Damage Dealt")
+            fig_damage = create_damage_chart(participants)
+            if fig_damage:
+                st.plotly_chart(fig_damage, use_container_width=True)
         
-        elif chart_option == "KDA Ratio":
-            fig = create_kda_chart(participants)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            st.subheader("🌾 Creep Score (CS)")
+            fig_cs = create_cs_chart(participants)
+            if fig_cs:
+                st.plotly_chart(fig_cs, use_container_width=True)
         
-        elif chart_option == "Damage per Gold Efficiency":
-            fig = create_damage_per_gold_chart(participants)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
+        # Second row of charts
+        col3, col4 = st.columns(2)
         
-        elif chart_option == "Vision Score":
-            fig = create_vision_chart(participants)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
+        with col3:
+            st.subheader("💰 Damage per Gold Efficiency")
+            fig_efficiency = create_damage_per_gold_chart(participants)
+            if fig_efficiency:
+                st.plotly_chart(fig_efficiency, use_container_width=True)
+        
+        with col4:
+            st.subheader("👁️ Vision Score")
+            fig_vision = create_vision_chart(participants)
+            if fig_vision:
+                st.plotly_chart(fig_vision, use_container_width=True)
         
         # Raw data section (collapsible)
         with st.expander("🔍 Raw Game Data"):

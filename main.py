@@ -18,7 +18,7 @@ def main():
         # Launch Streamlit application
         subprocess.run([
             sys.executable, "-m", "streamlit", "run", 
-            "views/streamlit/streamlit_app.py",
+            "views/streamlit/⚔️_LoL_Data_Analyzer.py",
             "--server.port=8501",
             "--server.runOnSave=true",
             "--server.fileWatcherType=auto"

@@ -2,6 +2,7 @@
 import json
 from typing import List, Optional
 from models.participant_data import ParticipantData
+from constants import UNKNOWN_VALUE
 
 class GameData:
     """Class to manage game data."""
@@ -48,7 +49,7 @@ class GameData:
 
     def get_version(self) -> str:
         """Get game version."""
-        return self.data.get("gameVersion", "Unknown")
+        return self.data.get("gameVersion", UNKNOWN_VALUE)
 
     def get_team_damage(self, team: str) -> int:
         """Get total damage for a team."""
@@ -68,4 +69,4 @@ class GameData:
         date_parts = [part for part in date_parts if part.isdigit()]
         if len(date_parts) >= 3:
             return f"{date_parts[0]}-{date_parts[1]}-{date_parts[2]}"
-        return "Unknown"
+        return UNKNOWN_VALUE
