@@ -34,6 +34,9 @@ POSITION_MAP = {
     "UTILITY": "5"
 }
 
+# Constants for display
+AVG_OPPONENTS_LABEL = "Avg Opponents"
+
 def load_team_analyzer():
     """Load and cache the team analyzer"""
     if 'team_analyzer' not in st.session_state:
@@ -43,7 +46,7 @@ def load_team_analyzer():
             st.session_state.team_analyzer = analyzer
             st.session_state.position_comparison = PositionComparison(analyzer, None)
             st.session_state.team_visualizer = TeamVisualizer(analyzer)
-            st.success(f"✅ Team analysis loaded successfully")
+            st.success("✅ Team analysis loaded successfully")
     
     return (st.session_state.team_analyzer, 
             st.session_state.position_comparison, 
@@ -144,129 +147,160 @@ def display_individual_player_stats(analyzer, player_name, position):
         st.metric("Vision Score", f"{player_stats.get('vision_score', 0):.1f}")
         st.metric("Most Played Champion", player_stats.get('champion', UNKNOWN_VALUE))
 
-def display_position_comparison(analyzer, position_comparison):
+def display_position_comparison(analyzer):
     """Display position comparison analysis"""
     st.subheader("⚖️ Position Comparison")
     
-    # Position selection
-    selected_position = st.selectbox("Select position to compare:", POSITIONS)
+    # Get all our team players with their positions
+    our_players_with_positions = []
+    for position in POSITIONS:
+        players = analyzer.get_our_players_by_position(position)
+        for player in players:
+            our_players_with_positions.append((fix_encoding(player), position, player))
     
-    if selected_position:
-        # Get our players and opponents for this position
-        our_players = analyzer.get_our_players_by_position(selected_position)
+    if not our_players_with_positions:
+        st.warning("No team players found")
+        return
+    
+    # Player selection dropdown
+    player_options = [f"{name} ({pos})" for name, pos, _ in our_players_with_positions]
+    selected_player_option = st.selectbox("Select a player to compare:", player_options)
+    
+    if selected_player_option:
+        # Extract player info
+        selected_display_name = selected_player_option.split(" (")[0]
+        selected_position = selected_player_option.split(" (")[1].rstrip(")")
         
-        if not our_players:
-            st.warning(f"No players found for position {selected_position}")
+        # Find the actual player name (before encoding fix)
+        actual_player_name = None
+        for display_name, pos, orig_name in our_players_with_positions:
+            if display_name == selected_display_name and pos == selected_position:
+                actual_player_name = orig_name
+                break
+        
+        if not actual_player_name:
+            st.error("Player not found")
             return
         
-        st.write(f"**Comparing {selected_position} players**")
-          # Display comparison data
+        st.write(f"**Comparing {selected_display_name} vs average {selected_position} opponents**")
+        
+        # Display comparison data using the new model method
         try:
-            # Get comparison data using available methods
-            our_stats = None
-            opponent_stats = analyzer.get_opponents_average_stats(selected_position)
+            # Use the team analyzer to get individual player vs opponents data with percentages
+            comparison_data = analyzer.get_player_comparison_with_percentages(actual_player_name, selected_position)
             
-            # Calculate average stats for our team at this position
-            our_players = analyzer.get_our_players_by_position(selected_position)
-            our_player_stats_list = []
-            
-            for player in our_players:
-                player_stats = analyzer.get_player_average_stats(player, selected_position)
-                if player_stats:
-                    our_player_stats_list.append(player_stats)
-              # Calculate averages for our team
-            if our_player_stats_list:
-                our_stats = {
-                    'avg_kills': sum(stats.get('kills', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
-                    'avg_deaths': sum(stats.get('deaths', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
-                    'avg_assists': sum(stats.get('assists', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
-                    'avg_damage': sum(stats.get('damage', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
-                    'avg_cs': sum(stats.get('cs', 0) for stats in our_player_stats_list) / len(our_player_stats_list),
-                    'avg_vision_score': sum(stats.get('vision_score', 0) for stats in our_player_stats_list) / len(our_player_stats_list)
-                }
-            
-            if our_stats and opponent_stats:
-                # Create comparison chart using fields that actually exist
-                metrics = ['Avg Kills', 'Avg Deaths', 'Avg Assists', 'Avg Damage', 'Avg CS', 'Avg Vision']
-                our_values = [
-                    our_stats.get('avg_kills', 0),
-                    our_stats.get('avg_deaths', 0),
-                    our_stats.get('avg_assists', 0),
-                    our_stats.get('avg_damage', 0),
-                    our_stats.get('avg_cs', 0),
-                    our_stats.get('avg_vision_score', 0)
+            if comparison_data:
+                # Display raw values table
+                st.write("**Raw Statistics:**")
+                raw_metrics = ['Kills', 'Deaths', 'Assists', 'Dmg/min', 'CS/min', 'Vision/min', 'KDA']
+                our_raw_values = [
+                    comparison_data['our_stats_raw']['kills'],
+                    comparison_data['our_stats_raw']['deaths'],
+                    comparison_data['our_stats_raw']['assists'],
+                    comparison_data['our_stats_raw']['damage_per_minute'],
+                    comparison_data['our_stats_raw']['cs_per_minute'],
+                    comparison_data['our_stats_raw']['vision_per_minute'],
+                    comparison_data['our_stats_raw']['kda']
                 ]
-                opponent_values = [
-                    opponent_stats.get('kills', 0),
-                    opponent_stats.get('deaths', 0),
-                    opponent_stats.get('assists', 0),
-                    opponent_stats.get('damage', 0),
-                    opponent_stats.get('cs', 0),
-                    opponent_stats.get('vision_score', 0)
+                opponent_raw_values = [
+                    comparison_data['opponent_stats_raw']['kills'],
+                    comparison_data['opponent_stats_raw']['deaths'],
+                    comparison_data['opponent_stats_raw']['assists'],
+                    comparison_data['opponent_stats_raw']['damage_per_minute'],
+                    comparison_data['opponent_stats_raw']['cs_per_minute'],
+                    comparison_data['opponent_stats_raw']['vision_per_minute'],
+                    comparison_data['opponent_stats_raw']['kda']
                 ]
                 
-                # Create comparison DataFrame
-                df_comparison = pd.DataFrame({
-                    'Metric': metrics,
-                    'Our Team': our_values,
-                    'Opponents': opponent_values
+                # Create raw comparison DataFrame
+                df_raw = pd.DataFrame({
+                    'Metric': raw_metrics,
+                    f'{selected_display_name}': [f"{val:.2f}" for val in our_raw_values],
+                    AVG_OPPONENTS_LABEL: [f"{val:.2f}" for val in opponent_raw_values]
                 })
                 
-                # Display table
-                st.dataframe(df_comparison, use_container_width=True, hide_index=True)
+                st.dataframe(df_raw, use_container_width=True, hide_index=True)
                 
-                # Create radar chart
-                create_position_radar_chart(metrics, our_values, opponent_values, selected_position)
+                # Get normalized percentages for radar chart
+                our_normalized_values = [
+                    comparison_data['our_stats_normalized'].get('kills', 0),
+                    comparison_data['our_stats_normalized'].get('deaths', 0),
+                    comparison_data['our_stats_normalized'].get('assists', 0),
+                    comparison_data['our_stats_normalized'].get('damage_per_minute', 0),
+                    comparison_data['our_stats_normalized'].get('cs_per_minute', 0),
+                    comparison_data['our_stats_normalized'].get('vision_per_minute', 0),
+                    comparison_data['our_stats_normalized'].get('kda', 0)
+                ]
+                opponent_normalized_values = [
+                    comparison_data['opponent_stats_normalized'].get('kills', 0),
+                    comparison_data['opponent_stats_normalized'].get('deaths', 0),
+                    comparison_data['opponent_stats_normalized'].get('assists', 0),
+                    comparison_data['opponent_stats_normalized'].get('damage_per_minute', 0),
+                    comparison_data['opponent_stats_normalized'].get('cs_per_minute', 0),
+                    comparison_data['opponent_stats_normalized'].get('vision_per_minute', 0),
+                    comparison_data['opponent_stats_normalized'].get('kda', 0)
+                ]
+                
+                # Create normalized radar chart
+                st.write("**Performance Comparison (Percentile Ranking)**")
+                create_position_radar_chart(raw_metrics, our_normalized_values, opponent_normalized_values, selected_position, selected_display_name)
+                
+                # Display percentage comparison table
+                st.write("**Performance Percentiles (0% = worst in position, 100% = best in position):**")
+                df_percentage = pd.DataFrame({
+                    'Metric': raw_metrics,
+                    f'{selected_display_name}': [f"{val:.1f}%" for val in our_normalized_values],
+                    AVG_OPPONENTS_LABEL: [f"{val:.1f}%" for val in opponent_normalized_values]
+                })
+                
+                st.dataframe(df_percentage, use_container_width=True, hide_index=True)
                 
             else:
                 st.warning("Insufficient data for position comparison")
                 
         except Exception as e:
             st.error(f"Error in position comparison: {str(e)}")
+            st.error(f"Debug: Player '{actual_player_name}' at position '{selected_position}'")
 
-def create_position_radar_chart(metrics, our_values, opponent_values, position):
-    """Create a radar chart for position comparison"""
+def create_position_radar_chart(metrics, our_values, opponent_values, position, player_name=None):
+    """Create a radar chart for position comparison using normalized percentage values"""
     
-    # Normalize values to 0-100 scale for better visualization
-    all_values = our_values + opponent_values
-    if max(all_values) > 0:
-        our_normalized = [(val / max(all_values)) * 100 for val in our_values]
-        opp_normalized = [(val / max(all_values)) * 100 for val in opponent_values]
-    else:
-        our_normalized = [0] * len(our_values)
-        opp_normalized = [0] * len(opponent_values)
-    
+    # The values are already normalized to 0-100 percentages from the model
     fig = go.Figure()
+    
+    # Use player name if provided, otherwise use "Our Team"
+    our_label = player_name if player_name else "Our Team"
     
     # Add our team trace
     fig.add_trace(go.Scatterpolar(
-        r=our_normalized + [our_normalized[0]],  # Close the polygon
+        r=our_values + [our_values[0]],  # Close the polygon
         theta=metrics + [metrics[0]],
         fill='toself',
-        name='Our Team',
+        name=our_label,
         fillcolor='rgba(52, 152, 219, 0.2)',
-        line=dict(color='rgba(52, 152, 219, 1)', width=2)
+        line={'color': 'rgba(52, 152, 219, 1)', 'width': 2}
     ))
     
     # Add opponents trace
     fig.add_trace(go.Scatterpolar(
-        r=opp_normalized + [opp_normalized[0]],  # Close the polygon
+        r=opponent_values + [opponent_values[0]],  # Close the polygon
         theta=metrics + [metrics[0]],
         fill='toself',
-        name='Opponents',
+        name=AVG_OPPONENTS_LABEL,
         fillcolor='rgba(231, 76, 60, 0.2)',
-        line=dict(color='rgba(231, 76, 60, 1)', width=2)
+        line={'color': 'rgba(231, 76, 60, 1)', 'width': 2}
     ))
     
     fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 100]
-            )
-        ),
+        polar={
+            'radialaxis': {
+                'visible': True,
+                'range': [0, 100],
+                'ticksuffix': '%'
+            }
+        },
         showlegend=True,
-        title=f"Position Comparison: {position}",
+        title=f"Position Comparison: {position} (Normalized Percentiles)",
         height=500
     )
     
@@ -279,7 +313,7 @@ def main():
     
     try:
         # Load analyzers
-        analyzer, position_comparison, team_visualizer = load_team_analyzer()
+        analyzer, _, _ = load_team_analyzer()
         
         # Main sections
         tab1, tab2, tab3 = st.tabs([
@@ -295,7 +329,7 @@ def main():
             display_player_detailed_analysis(analyzer)
         
         with tab3:
-            display_position_comparison(analyzer, position_comparison)
+            display_position_comparison(analyzer)
             
     except Exception as e:
         st.error(f"❌ Error in team analysis: {str(e)}")
