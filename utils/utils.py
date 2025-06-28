@@ -1,22 +1,4 @@
-# UTILITY: Shared utilities for console setup and text encoding
-import sys
-from rich.console import Console
-from colorama import init
 from constants import POSITION_FULL_NAMES, POSITION_SHORT_NAMES
-
-def setup_console():
-    """Initialize console with proper encoding and colorama"""
-    # Initialize colorama for Windows compatibility
-    init(autoreset=True)
-    
-    # Create console instance
-    console = Console()
-    
-    # Configure UTF-8 encoding for Windows
-    if sys.platform == "win32":
-        sys.stdout.reconfigure(encoding='utf-8')
-    
-    return console
 
 
 def fix_encoding(text):

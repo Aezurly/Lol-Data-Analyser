@@ -83,7 +83,7 @@ LOSE_EMOJI = "💀"
 
 # Page paths for navigation
 PAGES = {
-    'HOME': "⚔️_LoL_Data_Analyzer.py",
+    'HOME': "streamlit_app.py",
     'SINGLE_GAME': "pages/1_📊_Single_Game.py",
     'GLOBAL_STATS': "pages/2_🌌_Global_Stats.py", 
     'MARMOTTE_FLIP': "pages/3_🦦_Marmotte_Flip.py",
