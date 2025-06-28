@@ -5,13 +5,14 @@ from models.team_analyzer import TeamAnalyzer
 from models.position_comparison import PositionComparison
 from views.shared.team_visualizer import TeamVisualizer
 from utils.utils import fix_encoding
+from constants import POSITIONS
 
 class TeamMenuHandler:
     """Menu handler for Aezurly's team analysis"""
     
     # Constants
     PROMPT_PLAYER_NAME = "Enter player name"
-    PROMPT_POSITION = "Enter position (TOP (1), JUNGLE (2), MIDDLE (3), BOTTOM (4), UTILITY (5))"
+    PROMPT_POSITION = f"Enter position ({', '.join([f'{pos} ({i+1})' for i, pos in enumerate(POSITIONS)])})"
     
     def __init__(self, console):
         self.console = console

@@ -3,17 +3,57 @@
 Constants used throughout the LoL Data Analyzer application
 """
 
+# Standard position names (as they appear in JSON data)
+POSITION_FULL_NAMES = {
+    "TOP": "TOP",
+    "JUNGLE": "JUNGLE", 
+    "MIDDLE": "MIDDLE",
+    "BOTTOM": "BOTTOM",
+    "UTILITY": "SUPPORT"  # UTILITY from JSON becomes SUPPORT in our app
+}
+
+# Short position names (3 characters max)
+POSITION_SHORT_NAMES = {
+    "TOP": "TOP",
+    "JUNGLE": "JGL",
+    "MIDDLE": "MID", 
+    "BOTTOM": "BOT",
+    "SUPPORT": "SUP"
+}
+
+# All valid positions in our system (full names)
+POSITIONS = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "SUPPORT"]
+
+# Position mappings for numeric input
+POSITION_MAP = {
+    "TOP": "1",
+    "JUNGLE": "2", 
+    "MIDDLE": "3",
+    "BOTTOM": "4",
+    "SUPPORT": "5"
+}
+
+# Base URLs for position icons
+_TOP_ICON_URL = 'https://wiki.leagueoflegends.com/en-us/images/Top_icon.png?58442'
+_JUNGLE_ICON_URL = 'https://wiki.leagueoflegends.com/en-us/images/Jungle_icon.png?9225d'
+_MIDDLE_ICON_URL = 'https://wiki.leagueoflegends.com/en-us/images/Middle_icon.png?fa3f0'
+_BOTTOM_ICON_URL = 'https://wiki.leagueoflegends.com/en-us/images/Bottom_icon.png?6d4b2'
+_SUPPORT_ICON_URL = 'https://wiki.leagueoflegends.com/en-us/images/Support_icon.png?af1ff'
+
 # Position icon URLs from League of Legends Wiki
 POSITION_ICON_URLS = {
-    'TOP': 'https://wiki.leagueoflegends.com/en-us/images/Top_icon.png?58442',
-    'JUNGLE': 'https://wiki.leagueoflegends.com/en-us/images/Jungle_icon.png?9225d', 
-    'MIDDLE': 'https://wiki.leagueoflegends.com/en-us/images/Middle_icon.png?fa3f0',
-    'BOTTOM': 'https://wiki.leagueoflegends.com/en-us/images/Bottom_icon.png?6d4b2',
-    'UTILITY': 'https://wiki.leagueoflegends.com/en-us/images/Support_icon.png?af1ff',
-    'ADC': 'https://wiki.leagueoflegends.com/en-us/images/Bottom_icon.png?6d4b2',
-    'SUPPORT': 'https://wiki.leagueoflegends.com/en-us/images/Support_icon.png?af1ff',
-    'MID': 'https://wiki.leagueoflegends.com/en-us/images/Middle_icon.png?fa3f0',
-    'JGL': 'https://wiki.leagueoflegends.com/en-us/images/Jungle_icon.png?9225d',
+    'TOP': _TOP_ICON_URL,
+    'JUNGLE': _JUNGLE_ICON_URL, 
+    'MIDDLE': _MIDDLE_ICON_URL,
+    'BOTTOM': _BOTTOM_ICON_URL,
+    'SUPPORT': _SUPPORT_ICON_URL,
+    # Legacy and alternative mappings for backward compatibility
+    'UTILITY': _SUPPORT_ICON_URL,
+    'ADC': _BOTTOM_ICON_URL,
+    'MID': _MIDDLE_ICON_URL,
+    'JGL': _JUNGLE_ICON_URL,
+    'BOT': _BOTTOM_ICON_URL,
+    'SUP': _SUPPORT_ICON_URL,
 }
 
 # Default icon for unknown positions
@@ -63,3 +103,6 @@ TEAM_2_LABEL = "Team 2"
 
 # Common values
 UNKNOWN_VALUE = "Unknown"
+
+# Target player for team analysis
+TARGET_PLAYER = "Aezurly"

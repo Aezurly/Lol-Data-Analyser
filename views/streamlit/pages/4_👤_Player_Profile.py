@@ -10,13 +10,13 @@ import plotly.graph_objects as go
 
 # Import models and utilities
 from models.multi_game_analyzer import MultiGameAnalyzer
-from utils.utils import fix_encoding, normalize_player_name
+from utils.utils import fix_encoding, normalize_player_name, get_position_display_name
 from utils.predicates import (
     DataFrameStyler,
     DisplayHelpers,
     ValidationHelpers
 )
-from constants import PAGES
+from constants import PAGES, POSITIONS
 
 # Configure page
 st.set_page_config(

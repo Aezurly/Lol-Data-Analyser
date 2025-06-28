@@ -15,11 +15,11 @@ import pandas as pd
 from models.game_data import GameData
 from views.shared.game_vizualizer import GameVisualizer
 from views.streamlit.components.player_card import display_participants_cards_grid
-from utils.utils import fix_encoding
+from utils.utils import fix_encoding, normalize_player_name, get_position_display_name
 from constants import (
     POSITION_ICON_URLS, DEFAULT_POSITION_ICON_URL, TEAM_COLORS, 
     TEAM_1_NAME, TEAM_2_NAME, WIN_EMOJI, LOSE_EMOJI, TEAM_1_ID, TEAM_2_ID,
-    TEAM_1_LABEL, TEAM_2_LABEL
+    TEAM_1_LABEL, TEAM_2_LABEL, POSITIONS
 )
 
 # Configure page

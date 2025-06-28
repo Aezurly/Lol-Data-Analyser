@@ -3,6 +3,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from views.terminal.prompt_helpers import PromptHelpers
 from views.terminal.multi_game_display import MultiGameDisplay
+from constants import POSITIONS
 
 class MenuHandler:
     """Handles menu display and user interactions"""
@@ -29,7 +30,7 @@ class MenuHandler:
     
     def handle_position_comparison(self):
         """Handle position comparison chart selection"""
-        existing_positions = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+        existing_positions = POSITIONS
         position = self.prompt_helpers.get_position_with_display(existing_positions, allow_all=True)
         
         if not position:

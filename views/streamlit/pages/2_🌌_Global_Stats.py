@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 
 # Import models and utilities
 from models.multi_game_analyzer import MultiGameAnalyzer
-from utils.utils import fix_encoding
+from utils.utils import fix_encoding, normalize_player_name, get_position_display_name
 from utils.predicates import (
     has_minimum_games, 
     has_sufficient_position_players,
@@ -22,7 +22,7 @@ from utils.predicates import (
     DisplayHelpers,
     ValidationHelpers
 )
-from constants import DATA_DIR
+from constants import DATA_DIR, POSITIONS
 
 # Configure page
 st.set_page_config(

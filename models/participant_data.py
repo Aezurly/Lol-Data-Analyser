@@ -1,5 +1,6 @@
 # MODEL: Participant data representation and business logic for player statistics
 from constants import UNKNOWN_VALUE
+from utils.utils import normalize_player_name, normalize_position
 
 class ParticipantData:
     """Class to manage participant data."""
@@ -18,8 +19,9 @@ class ParticipantData:
         return "0"
 
     def get_name(self) -> str:
-        """Returns player name."""
-        return self._get_field("RIOT_ID_GAME_NAME", "riotIdGameName") or UNKNOWN_VALUE
+        """Returns normalized player name."""
+        raw_name = self._get_field("RIOT_ID_GAME_NAME", "riotIdGameName") or UNKNOWN_VALUE
+        return normalize_player_name(raw_name)
 
     def get_total_damage(self) -> int:
         """Returns total damage dealt to champions."""
@@ -30,8 +32,9 @@ class ParticipantData:
         return self._get_field("TEAM", "team") or UNKNOWN_VALUE
 
     def get_position(self) -> str:
-        """Returns player's position."""
-        return self._get_field("INDIVIDUAL_POSITION", "individualPosition") or UNKNOWN_VALUE
+        """Returns normalized player's position (SUPPORT instead of UTILITY)."""
+        raw_position = self._get_field("INDIVIDUAL_POSITION", "individualPosition") or UNKNOWN_VALUE
+        return normalize_position(raw_position)
 
     def get_kills(self) -> int:
         """Returns number of kills."""

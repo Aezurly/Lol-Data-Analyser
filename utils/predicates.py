@@ -3,6 +3,7 @@
 Predicates and utility functions to centralize business logic
 """
 from constants import UNKNOWN_VALUE
+from utils.utils import normalize_player_name, get_position_display_name
 
 from typing import Any, Callable
 
@@ -201,6 +202,26 @@ class DisplayHelpers:
     def format_position_comparison_message(position: str, count: int) -> str:
         """Format position comparison message"""
         return f"Compared to {count} players in **{position}** position:"
+
+    @staticmethod
+    def format_player_name(name: str) -> str:
+        """Format player name consistently"""
+        return normalize_player_name(name)
+    
+    @staticmethod
+    def format_position_name(position: str, short: bool = False) -> str:
+        """Format position name consistently"""
+        return get_position_display_name(position, short)
+    
+    @staticmethod
+    def format_team_players_list(team_players_dict: dict) -> str:
+        """Format team players dictionary into display string"""
+        formatted_players = []
+        for position, players in team_players_dict.items():
+            position_display = get_position_display_name(position, short=True)
+            for player in players:
+                formatted_players.append(f"{normalize_player_name(player)} ({position_display})")
+        return ", ".join(sorted(formatted_players))
 
 
 class ValidationHelpers:

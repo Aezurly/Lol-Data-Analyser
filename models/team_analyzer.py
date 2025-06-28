@@ -5,14 +5,15 @@ import os
 import json
 from models.game_data import GameData
 from models.participant_data import ParticipantData
-from utils.utils import fix_encoding
+from utils.utils import fix_encoding, normalize_player_name, normalize_position
+from constants import TARGET_PLAYER, POSITIONS
 
 class TeamAnalyzer:
     """Class to analyze Marmotte Flip vs opponents"""
     
     def __init__(self, data_directory: str = "data"):
         self.data_directory = data_directory
-        self.target_player = "Aezurly" # Target player to identify the team
+        self.target_player = TARGET_PLAYER  # Use centralized constant
         self.marmotte_flip_players: Set[str] = set()
         self.our_players_stats: Dict[str, Dict] = defaultdict(lambda: defaultdict(list))
         self.opponents_stats: Dict[str, Dict] = defaultdict(lambda: defaultdict(list))
@@ -49,16 +50,16 @@ class TeamAnalyzer:
     def _find_target_player(self, game: GameData) -> Optional[ParticipantData]:
         """Find the target player in the game"""
         for participant in game.get_all_participants():
-            if fix_encoding(participant.get_name()) == self.target_player:
+            if normalize_player_name(participant.get_name()) == normalize_player_name(self.target_player):
                 return participant
         return None
     
     def _add_teammates_to_team(self, game: GameData, team_id: str):
         """Add all teammates (except target player) to Marmotte Flip players"""
         for participant in game.get_all_participants():
-            player_name = fix_encoding(participant.get_name())
+            player_name = normalize_player_name(participant.get_name())
             if (participant.get_team() == team_id and 
-                player_name != self.target_player):
+                player_name != normalize_player_name(self.target_player)):
                 self.marmotte_flip_players.add(player_name)
     
     def _collect_statistics(self):
@@ -104,8 +105,8 @@ class TeamAnalyzer:
         
     def _classify_and_store_player_stats(self, participant: ParticipantData, player_stats: Dict):
         """Classify player as teammate or opponent and store their stats"""
-        player_name = fix_encoding(participant.get_name())
-        position = participant.get_position()
+        player_name = normalize_player_name(participant.get_name())
+        position = normalize_position(participant.get_position())  # Use normalized position
         
         if self._is_marmotte_flip_player(player_name):
             self.our_players_stats[position][player_name].append(player_stats)
@@ -114,7 +115,9 @@ class TeamAnalyzer:
     
     def _is_marmotte_flip_player(self, player_name: str) -> bool:
         """Check if a player is part of Marmotte Flip team"""
-        return player_name == self.target_player or player_name in self.marmotte_flip_players
+        normalized_name = normalize_player_name(player_name)
+        normalized_target = normalize_player_name(self.target_player)
+        return normalized_name == normalized_target or normalized_name in self.marmotte_flip_players
     
     def get_our_players_by_position(self, position: str) -> List[str]:
         """Returns the list of Marmotte Flip players for a given position"""
@@ -168,56 +171,95 @@ class TeamAnalyzer:
             return avg_stats
         return None
     
-    def get_all_positions(self) -> List[str]:
-        """Returns all available positions"""
-        positions = set()
-        positions.update(self.our_players_stats.keys())
-        positions.update(self.opponents_stats.keys())
-        return sorted(list(positions))
-    
     def get_marmotte_flip_players_list(self) -> List[str]:
-        """Returns the list of all Marmotte Flip team players"""
-        return sorted(list(self.marmotte_flip_players))
+        """Get list of Marmotte Flip players with normalized names"""
+        all_players = list(self.marmotte_flip_players)
+        if normalize_player_name(self.target_player) not in [normalize_player_name(p) for p in all_players]:
+            all_players.append(self.target_player)
+        return [normalize_player_name(player) for player in sorted(all_players)]
     
-    def get_position_statistics_range(self, position: str) -> Dict[str, Dict[str, float]]:
-        """Get the min and max values for each statistic in a position for normalization"""
-        all_players_stats = []
+    def get_all_positions(self) -> List[str]:
+        """Get all positions that have been played by team members"""
+        return [pos for pos in POSITIONS if pos in self.our_players_stats and self.our_players_stats[pos]]
+    
+    def _collect_all_player_stats(self, position: str) -> List[Dict]:
+        """Collect all player stats for a position from both our team and opponents"""
+        all_stats = []
         
         # Get our players stats
         if position in self.our_players_stats:
-            for player_name, player_games in self.our_players_stats[position].items():
-                for game_stats in player_games:
-                    all_players_stats.append(game_stats)
+            for player_games in self.our_players_stats[position].values():
+                all_stats.extend(player_games)
         
         # Get opponents stats  
         if position in self.opponents_stats:
-            for game_stats in self.opponents_stats[position]['opponents']:
-                all_players_stats.append(game_stats)
+            all_stats.extend(self.opponents_stats[position]['opponents'])
+        
+        return all_stats
+    
+    def _calculate_metric_range(self, metric: str, all_stats: List[Dict]) -> Dict[str, float]:
+        """Calculate min, max, and range for a specific metric"""
+        values = [stats[metric] for stats in all_stats if metric in stats]
+        
+        if not values:
+            return {}
+        
+        min_val = min(values)
+        max_val = max(values)
+        return {
+            'min': min_val,
+            'max': max_val,
+            'range': max_val - min_val if max_val != min_val else 1
+        }
+
+    def get_position_statistics_range(self, position: str) -> Dict[str, Dict[str, float]]:
+        """Get the min and max values for each statistic in a position for normalization"""
+        all_players_stats = self._collect_all_player_stats(position)
         
         if not all_players_stats:
             return {}
         
-        # Calculate min/max for each metric (using per-minute values)
-        stats_ranges = {}
-        
         # Define the metrics we want to analyze (using per-minute versions)
         metrics = ['kills', 'deaths', 'assists', 'damage_per_minute', 'cs_per_minute', 'vision_per_minute', 'kda']
         
+        stats_ranges = {}
         for metric in metrics:
-            values = []
-            for stats in all_players_stats:
-                if metric in stats:
-                    values.append(stats[metric])
-            
-            if values:
-                stats_ranges[metric] = {
-                    'min': min(values),
-                    'max': max(values),
-                    'range': max(values) - min(values) if max(values) != min(values) else 1
-                }
+            metric_range = self._calculate_metric_range(metric, all_players_stats)
+            if metric_range:
+                stats_ranges[metric] = metric_range
         
         return stats_ranges
     
+    def _normalize_metric_higher_is_better(self, value: float, min_val: float, max_val: float) -> float:
+        """Normalize a metric where higher values are better"""
+        if max_val == min_val:
+            return 50.0  # If all values are the same
+        
+        percentage = ((value - min_val) / (max_val - min_val)) * 100
+        return max(0, min(100, percentage))
+    
+    def _normalize_metric_lower_is_better(self, value: float, min_val: float, max_val: float) -> float:
+        """Normalize a metric where lower values are better (inverted)"""
+        if max_val == min_val:
+            return 50.0  # If all values are the same
+        
+        percentage = ((max_val - value) / (max_val - min_val)) * 100
+        return max(0, min(100, percentage))
+    
+    def _normalize_single_metric(self, metric: str, stats: Dict, ranges: Dict, is_higher_better: bool) -> Optional[float]:
+        """Normalize a single metric to percentage"""
+        if metric not in stats or metric not in ranges:
+            return None
+        
+        value = stats[metric]
+        min_val = ranges[metric]['min']
+        max_val = ranges[metric]['max']
+        
+        if is_higher_better:
+            return self._normalize_metric_higher_is_better(value, min_val, max_val)
+        else:
+            return self._normalize_metric_lower_is_better(value, min_val, max_val)
+
     def normalize_stats_to_percentage(self, stats: Dict, position: str) -> Dict[str, float]:
         """Convert stats to normalized percentages (0-100) based on position ranges"""
         ranges = self.get_position_statistics_range(position)
@@ -228,31 +270,17 @@ class TeamAnalyzer:
         # Metrics that are "lower is better"
         lower_is_better = ['deaths']
         
+        # Process higher-is-better metrics
         for metric in higher_is_better:
-            if metric in stats and metric in ranges:
-                value = stats[metric]
-                min_val = ranges[metric]['min']
-                max_val = ranges[metric]['max']
-                
-                if max_val != min_val:
-                    # For "higher is better", 0% = min, 100% = max
-                    percentage = ((value - min_val) / (max_val - min_val)) * 100
-                    normalized_stats[metric] = max(0, min(100, percentage))
-                else:
-                    normalized_stats[metric] = 50  # If all values are the same
+            normalized = self._normalize_single_metric(metric, stats, ranges, True)
+            if normalized is not None:
+                normalized_stats[metric] = normalized
         
+        # Process lower-is-better metrics
         for metric in lower_is_better:
-            if metric in stats and metric in ranges:
-                value = stats[metric]
-                min_val = ranges[metric]['min']
-                max_val = ranges[metric]['max']
-                
-                if max_val != min_val:
-                    # For "lower is better", 0% = max, 100% = min (inverted)
-                    percentage = ((max_val - value) / (max_val - min_val)) * 100
-                    normalized_stats[metric] = max(0, min(100, percentage))
-                else:
-                    normalized_stats[metric] = 50  # If all values are the same
+            normalized = self._normalize_single_metric(metric, stats, ranges, False)
+            if normalized is not None:
+                normalized_stats[metric] = normalized
         
         return normalized_stats
     

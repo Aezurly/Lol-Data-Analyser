@@ -4,7 +4,7 @@ Reusable player card component for displaying player information
 """
 
 import streamlit as st
-from utils.utils import fix_encoding, normalize_player_name
+from utils.utils import fix_encoding, normalize_player_name, get_position_display_name
 from constants import PAGES, WIN_EMOJI, LOSE_EMOJI
 
 
@@ -13,10 +13,10 @@ def display_player_card(player_name: str, player_stats=None, participant=None, s
 
     if participant:
         extra_title = participant.get_champion()
-        games_text = participant.get_position()
+        games_text = get_position_display_name(participant.get_position(), short=True)
         extra_info = f"{participant.get_kills()}/{participant.get_deaths()}/{participant.get_assists()}"
     elif player_stats:
-        extra_title = player_stats.get_most_played_position()
+        extra_title = get_position_display_name(player_stats.get_most_played_position(), short=True)
         win_rate = player_stats.get_win_rate() * 100
         games_text = f"{player_stats.games_played} games"
         extra_info = f"{win_rate:.1f}% win rate"
@@ -25,8 +25,11 @@ def display_player_card(player_name: str, player_stats=None, participant=None, s
         games_text = "No data"
         extra_info = ""
     
+    # Use normalized player name for display
+    display_name = normalize_player_name(player_name)
+    
     with st.container(border=True):
-        st.markdown(f"##### {fix_encoding(player_name)} - *{extra_title}*")
+        st.markdown(f"##### {display_name} - *{extra_title}*")
         if participant:
             st.write(f"{games_text} • {WIN_EMOJI if participant.get_win() else LOSE_EMOJI} • {extra_info}")
         else:

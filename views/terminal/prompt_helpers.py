@@ -3,6 +3,7 @@ from rich.prompt import Prompt
 from rich.console import Console
 from typing import List, Optional, Dict, Union
 from utils.utils import fix_encoding
+from constants import POSITIONS, POSITION_MAP
 
 class PromptHelpers:
     """Centralized helper class for user prompts and interactions"""
@@ -10,15 +11,9 @@ class PromptHelpers:
     def __init__(self, console: Console):
         self.console = console
         
-        # Common prompt constants
-        self.POSITION_OPTIONS = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
-        self.POSITION_MAP = {
-            "1": "TOP",
-            "2": "JUNGLE", 
-            "3": "MIDDLE",
-            "4": "BOTTOM",
-            "5": "UTILITY"
-        }
+        # Use centralized constants
+        self.POSITION_OPTIONS = POSITIONS
+        self.POSITION_MAP = {v: k for k, v in POSITION_MAP.items()}
     
     def get_player_name(self, available_players: Optional[List[str]] = None, prompt_text: str = "Enter player name") -> Optional[str]:
         """

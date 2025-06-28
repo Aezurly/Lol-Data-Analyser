@@ -15,7 +15,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from models.multi_game_analyzer import MultiGameAnalyzer
-from utils.utils import fix_encoding
+from utils.utils import fix_encoding, normalize_player_name
 from constants import DATA_DIR
 
 from views.streamlit.components import display_player_search_results, display_game_cards_grid

@@ -94,16 +94,10 @@ class PlayerStats:
     
     def get_most_played_position(self) -> str:
         """Get most played position"""
-        position = max(self.positions_played.items(), key=lambda x: x[1])[0]
-        if position == "BOTTOM":
-            return "ADC"
-        if position == "UTILITY":
-            return "SUP"
-        if position == "JUNGLE":
-            return "JGL"
-        if position == "MIDDLE":
-            return "MID"
-        return position if position else UNKNOWN_VALUE
+        from utils.utils import get_position_display_name
+        
+        position = max(self.positions_played.items(), key=lambda x: x[1])[0] if self.positions_played else UNKNOWN_VALUE
+        return get_position_display_name(position, short=True)
     
     def get_win_rate(self) -> float:
         """Get win rate based on games played"""
