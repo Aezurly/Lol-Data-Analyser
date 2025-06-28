@@ -23,6 +23,7 @@ from utils.predicates import (
     ValidationHelpers
 )
 from constants import DATA_DIR, POSITIONS
+from views.streamlit.components.navigation import create_navigation
 
 # Configure page
 st.set_page_config(
@@ -215,6 +216,8 @@ def display_champion_analytics(analyzer):
 
 def main():
     """Main multi-game analysis page using model methods and utilities"""
+    create_navigation("Global Stats")
+    
     st.title("🌌 Global Stats")
     st.write("Analyze performance across multiple games")
     

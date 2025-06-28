@@ -14,6 +14,7 @@ import pandas as pd
 # Import models and utilities
 from models.game_data import GameData
 from views.shared.game_vizualizer import GameVisualizer
+from views.streamlit.components.navigation import create_navigation
 from views.streamlit.components.player_card import display_participants_cards_grid
 from utils.utils import fix_encoding, normalize_player_name, get_position_display_name
 from constants import (
@@ -315,6 +316,8 @@ def display_participants_cards(participants):
 
 def main():
     """Main single game analysis page"""
+    create_navigation("Single Game")
+    
     st.title("📊 Single Game Analysis")
     st.write("Analyze individual game performance and statistics")
     

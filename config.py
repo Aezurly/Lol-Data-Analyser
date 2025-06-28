@@ -1,12 +1,7 @@
 import os
-from enum import Enum
 
-class InterfaceMode(Enum):
-    TERMINAL = "terminal"
-    STREAMLIT = "streamlit"
-
-# Feature flag - peut être défini par variable d'environnement
-INTERFACE_MODE = InterfaceMode.STREAMLIT
+# Application configuration for Streamlit deployment
+# This application is designed to run only with Streamlit interface
 
 # Autres configurations
 DATA_DIRECTORY = "data"
@@ -17,7 +12,7 @@ STREAMLIT_CONFIG = {
     'page_title': 'LoL Data Analyzer',
     'page_icon': '⚔️',
     'layout': 'wide',
-    'initial_sidebar_state': 'expanded'
+    'initial_sidebar_state': 'collapsed'
 }
 
 # Application metadata

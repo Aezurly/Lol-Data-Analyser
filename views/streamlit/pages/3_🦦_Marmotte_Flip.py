@@ -18,6 +18,7 @@ from constants import UNKNOWN_VALUE, POSITIONS
 from models.position_comparison import PositionComparison
 from views.shared.team_visualizer import TeamVisualizer
 from utils.utils import fix_encoding, get_position_display_name, normalize_player_name
+from views.streamlit.components.navigation import create_navigation
 
 # Configure page
 st.set_page_config(
@@ -142,7 +143,7 @@ def display_position_comparison(team_service: TeamService, analyzer):
     
     # Player selection using formatted options
     display_options = [display_name for display_name, _, _ in player_options]
-    selected_option = st.selectbox("Select a player to compare:", display_options, key="position_comparison")
+    selected_option = st.selectbox("Select a player to compare:", display_options)
     
     if selected_option:
         # Find the selected player data
@@ -277,6 +278,8 @@ def create_position_radar_chart(metrics, our_values, opponent_values, position, 
 
 def main():
     """Main team analysis page"""
+    create_navigation("Marmotte Flip")
+    
     st.title("🦦 Team Analysis")
     st.write("Marmotte Flip vs Opponents Analysis")
     

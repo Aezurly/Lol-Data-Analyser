@@ -1,33 +1,22 @@
-# CONTROLLER: Main entry point that coordinates application startup
+# CONTROLLER: Streamlit application entry point for deployment
 """
 League of Legends Game Analysis Tool
 
-Supports both terminal and web (Streamlit) interfaces for analyzing 
-League of Legends game data with visualizations and statistics.
+Web interface for analyzing League of Legends game data 
+with interactive visualizations and statistics.
 """
 
-import sys
-import subprocess
-from config import INTERFACE_MODE, InterfaceMode
+# This file is kept for compatibility but the actual Streamlit app
+# entry point is views/streamlit/⚔️_LoL_Data_Analyzer.py
+# For local development, use: streamlit run views/streamlit/⚔️_LoL_Data_Analyzer.py
 
 def main():
-    """Main entry point for the game analysis application"""
-    print(f"Starting LoL Data Analyzer in {INTERFACE_MODE.value} mode...")
-    
-    if INTERFACE_MODE == InterfaceMode.STREAMLIT:
-        # Launch Streamlit application
-        subprocess.run([
-            sys.executable, "-m", "streamlit", "run", 
-            "views/streamlit/⚔️_LoL_Data_Analyzer.py",
-            "--server.port=8501",
-            "--server.runOnSave=true",
-            "--server.fileWatcherType=auto"
-        ])
-    else:
-        # Launch terminal application
-        from controllers.terminal.app_controller import AppController
-        app = AppController()
-        app.run()
+    """
+    This main function is not used in Streamlit Community Cloud deployment.
+    The actual entry point is views/streamlit/⚔️_LoL_Data_Analyzer.py
+    """
+    print("This application is designed to run with Streamlit.")
+    print("Use: streamlit run views/streamlit/⚔️_LoL_Data_Analyzer.py")
 
 if __name__ == "__main__":
     main()
